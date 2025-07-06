@@ -119,7 +119,7 @@ export function MainApp() {
                   borderRadius: { xs: 2, lg: 0 },
                   p: { xs: 0.5, lg: 0 }
                 }}>
-                  <UserMenu />
+                  <UserMenu mode={mode} toggleMode={toggleMode} />
                   <ThemeToggle mode={mode} toggleMode={toggleMode} />
                 </Box>
                 

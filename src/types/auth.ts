@@ -3,11 +3,20 @@ export interface User {
   email: string;
   name: string;
   phone?: string;
+  department?: string;
   role: 'admin' | 'user' | 'operator';
   twoFactorEnabled: boolean;
   twoFactorSecret?: string;
   createdAt: Date;
   lastLogin?: Date;
+  credits?: number;
+  settings?: UserSettings;
+}
+
+export interface UserSettings {
+  emailNotifications: boolean;
+  smsNotifications: boolean;
+  autoSave: boolean;
 }
 
 export interface AuthSession {

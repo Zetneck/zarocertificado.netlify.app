@@ -26,6 +26,11 @@ interface AuthContextType {
   refreshSession: () => Promise<void>;
   changePassword: (currentPassword: string, newPassword: string) => Promise<{ success: boolean; error?: string }>;
   getLoginHistory: () => Promise<LoginAttempt[]>;
+  
+  // Funciones de perfil y configuración
+  updateUserProfile: (profileData: Partial<User>) => Promise<void>;
+  updateUserSettings: (settingsData: Partial<User['settings']>) => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -87,19 +92,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       email: 'admin@fumigacion.mx',
       name: 'Administrador Demo',
       phone: '+52 55 1234 5678',
+      department: 'Administración',
       role: 'admin',
       twoFactorEnabled: true,
       createdAt: new Date('2024-01-01'),
-      lastLogin: new Date()
+      lastLogin: new Date(),
+      credits: 100,
+      settings: {
+        emailNotifications: true,
+        smsNotifications: true,
+        autoSave: true
+      }
     },
     {
       id: 'demo-user',
       email: 'usuario@fumigacion.mx',
       name: 'Usuario Demo',
       phone: '+52 55 8765 4321',
+      department: 'Operaciones',
       role: 'user',
       twoFactorEnabled: false,
-      createdAt: new Date('2024-01-15')
+      createdAt: new Date('2024-01-15'),
+      credits: 50,
+      settings: {
+        emailNotifications: true,
+        smsNotifications: false,
+        autoSave: true
+      }
     }
   ];
 
@@ -347,6 +366,62 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     return loginAttempts;
   };
 
+  // Funciones de perfil y configuración
+  const updateUserProfile = async (profileData: Partial<User>): Promise<void> => {
+    try {
+      // Simular actualización del perfil
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      if (user) {
+        const updatedUser = { ...user, ...profileData };
+        setUser(updatedUser);
+        localStorage.setItem('authUser', JSON.stringify(updatedUser));
+      }
+    } catch (error) {
+      throw new Error('Error al actualizar perfil');
+    }
+  };
+
+  const updateUserSettings = async (settingsData: Partial<User['settings']>): Promise<void> => {
+    try {
+      // Simular actualización de configuración
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      if (user) {
+        const currentSettings = user.settings || {
+          emailNotifications: true,
+          smsNotifications: false,
+          autoSave: true
+        };
+        
+        const updatedUser = { 
+          ...user, 
+          settings: { ...currentSettings, ...settingsData }
+        };
+        setUser(updatedUser);
+        localStorage.setItem('authUser', JSON.stringify(updatedUser));
+      }
+    } catch (error) {
+      throw new Error('Error al actualizar configuración');
+    }
+  };
+
+  const deleteAccount = async (): Promise<void> => {
+    try {
+      // Simular eliminación de cuenta
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Limpiar todos los datos
+      localStorage.removeItem('authUser');
+      localStorage.removeItem('authSession');
+      
+      setUser(null);
+      setSession(null);
+    } catch (error) {
+      throw new Error('Error al eliminar cuenta');
+    }
+  };
+
   // Inicializar sesión al cargar
   useEffect(() => {
     const initSession = async () => {
@@ -394,7 +469,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     generateBackupCodes,
     refreshSession,
     changePassword,
-    getLoginHistory
+    getLoginHistory,
+    updateUserProfile,
+    updateUserSettings,
+    deleteAccount
   };
 
   return (

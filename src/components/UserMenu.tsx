@@ -20,12 +20,21 @@ import {
 import { useAuth } from '../hooks/useAuth';
 import { TwoFactorSettings } from './TwoFactorSettings';
 import { AccessHistory } from './AccessHistory';
+import { UserProfile } from './UserProfile';
+import { UserSettings } from './UserSettings';
 
-export function UserMenu() {
+interface UserMenuProps {
+  mode: 'light' | 'dark';
+  toggleMode: () => void;
+}
+
+export function UserMenu({ mode, toggleMode }: UserMenuProps) {
   const { user, logout } = useAuth();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [showSecuritySettings, setShowSecuritySettings] = useState(false);
   const [showLoginHistory, setShowLoginHistory] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -47,6 +56,16 @@ export function UserMenu() {
 
   const handleShowSecurity = () => {
     setShowSecuritySettings(true);
+    handleMenuClose();
+  };
+
+  const handleShowProfile = () => {
+    setShowProfile(true);
+    handleMenuClose();
+  };
+
+  const handleShowSettings = () => {
+    setShowSettings(true);
     handleMenuClose();
   };
 
@@ -99,7 +118,7 @@ export function UserMenu() {
         <Divider />
 
         {/* Opciones del menú */}
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem onClick={handleShowProfile}>
           <ListItemIcon>
             <AccountCircle fontSize="small" />
           </ListItemIcon>
@@ -120,7 +139,7 @@ export function UserMenu() {
           <Typography variant="body2">Historial de Accesos</Typography>
         </MenuItem>
 
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem onClick={handleShowSettings}>
           <ListItemIcon>
             <Settings fontSize="small" />
           </ListItemIcon>
@@ -147,6 +166,19 @@ export function UserMenu() {
         open={showLoginHistory}
         onClose={() => setShowLoginHistory(false)}
       />
+
+      {/* Componentes de pantalla completa */}
+      {showProfile && (
+        <UserProfile onBack={() => setShowProfile(false)} />
+      )}
+
+      {showSettings && (
+        <UserSettings 
+          onBack={() => setShowSettings(false)}
+          mode={mode}
+          toggleMode={toggleMode}
+        />
+      )}
     </Box>
   );
 }
