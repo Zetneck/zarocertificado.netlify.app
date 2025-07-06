@@ -15,13 +15,15 @@ import {
   Security,
   Logout,
   Settings,
-  History
+  History,
+  AdminPanelSettings
 } from '@mui/icons-material';
 import { useAuthReal } from '../hooks/useAuthReal';
 import { TwoFactorSettings } from './TwoFactorSettings';
 import { AccessHistory } from './AccessHistory';
 import { UserProfile } from './UserProfile';
 import { UserSettings } from './UserSettings';
+import { AdminPanelOverlay } from './AdminPanelOverlay';
 
 interface UserMenuProps {
   mode: 'light' | 'dark';
@@ -35,6 +37,7 @@ export function UserMenu({ mode, toggleMode }: UserMenuProps) {
   const [showLoginHistory, setShowLoginHistory] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showAdminPanel, setShowAdminPanel] = useState(false);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -66,6 +69,11 @@ export function UserMenu({ mode, toggleMode }: UserMenuProps) {
 
   const handleShowSettings = () => {
     setShowSettings(true);
+    handleMenuClose();
+  };
+
+  const handleShowAdminPanel = () => {
+    setShowAdminPanel(true);
     handleMenuClose();
   };
 
@@ -146,6 +154,16 @@ export function UserMenu({ mode, toggleMode }: UserMenuProps) {
           <Typography variant="body2">Configuración</Typography>
         </MenuItem>
 
+        {/* Panel de administración - solo para admins */}
+        {user.role === 'admin' && (
+          <MenuItem onClick={handleShowAdminPanel}>
+            <ListItemIcon>
+              <AdminPanelSettings fontSize="small" />
+            </ListItemIcon>
+            <Typography variant="body2">Panel de Administración</Typography>
+          </MenuItem>
+        )}
+
         <Divider />
 
         <MenuItem onClick={handleLogout}>
@@ -178,6 +196,11 @@ export function UserMenu({ mode, toggleMode }: UserMenuProps) {
           mode={mode}
           toggleMode={toggleMode}
         />
+      )}
+
+      {/* Panel de administración - solo para admins */}
+      {showAdminPanel && user.role === 'admin' && (
+        <AdminPanelOverlay onBack={() => setShowAdminPanel(false)} />
       )}
     </Box>
   );

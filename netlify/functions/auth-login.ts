@@ -23,7 +23,7 @@ export const handler: Handler = async (event) => {
     };
   }
 
-  let client: Client;
+  let client: Client | null = null;
 
   try {
     // Conexión a Neon
