@@ -10,10 +10,14 @@
   node_bundler = "esbuild"
 
 [[redirects]]
-  from = "/*"
+  from = "/"
   to = "/index.html"
   status = 200
-  force = false
+
+[[redirects]]
+  from = "/app/*"
+  to = "/index.html"
+  status = 200
 
 [[headers]]
   for = "/*"
