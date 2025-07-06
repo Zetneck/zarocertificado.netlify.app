@@ -27,9 +27,11 @@ export const handler: Handler = async (event) => {
   let client: Client | undefined;
 
   try {
-    // Conexión a Neon
+    // Conexión a Neon - removemos channel_binding que puede causar problemas
+    const databaseUrl = process.env.DATABASE_URL?.replace('&channel_binding=require', '').replace('channel_binding=require&', '').replace('?channel_binding=require', '');
+    
     client = new Client({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: databaseUrl,
       ssl: { rejectUnauthorized: false }
     });
     

@@ -46,8 +46,10 @@ export const handler: Handler = async (event) => {
   let client: Client | null = null;
 
   try {
+    const databaseUrl = process.env.DATABASE_URL?.replace('&channel_binding=require', '').replace('channel_binding=require&', '').replace('?channel_binding=require', '');
+    
     client = new Client({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: databaseUrl,
       ssl: { rejectUnauthorized: false }
     });
     
