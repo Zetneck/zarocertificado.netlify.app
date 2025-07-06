@@ -50,7 +50,7 @@ export function UserProfile({ onBack }: UserProfileProps) {
       await updateUserProfile(formData);
       setMessage({ type: 'success', text: 'Perfil actualizado correctamente' });
       setIsEditing(false);
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Error al actualizar el perfil' });
     } finally {
       setLoading(false);

@@ -190,7 +190,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         return { success: true };
       }
-    } catch (error) {
+    } catch {
       return {
         success: false,
         error: 'Error interno del servidor'
@@ -246,7 +246,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       localStorage.setItem('authSession', JSON.stringify(verifiedSession));
 
       return { success: true };
-    } catch (error) {
+    } catch {
       return { success: false, error: 'Error al verificar código' };
     }
   };
@@ -280,7 +280,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       return { success: true };
-    } catch (error) {
+    } catch {
       return { success: false, error: 'Error al habilitar 2FA' };
     }
   };
@@ -300,7 +300,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       
       return { success: true };
-    } catch (error) {
+    } catch {
       return { success: false, error: 'Error al deshabilitar 2FA' };
     }
   };
@@ -314,7 +314,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       );
       
       return { success: true, codes };
-    } catch (error) {
+    } catch {
       return { success: false, error: 'Error al generar códigos' };
     }
   };
@@ -352,11 +352,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setIsLoading(false);
   };
 
-  const changePassword = async (currentPassword: string, _newPassword: string): Promise<{ success: boolean; error?: string }> => {
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<{ success: boolean; error?: string }> => {
     await new Promise(resolve => setTimeout(resolve, 1000));
     
     if (currentPassword === 'wrong') {
       return { success: false, error: 'Contraseña actual incorrecta' };
+    }
+    
+    // Simular validación de la nueva contraseña
+    if (newPassword.length < 8) {
+      return { success: false, error: 'La contraseña debe tener al menos 8 caracteres' };
     }
     
     return { success: true };
@@ -377,7 +382,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(updatedUser);
         localStorage.setItem('authUser', JSON.stringify(updatedUser));
       }
-    } catch (error) {
+    } catch {
       throw new Error('Error al actualizar perfil');
     }
   };
@@ -401,7 +406,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(updatedUser);
         localStorage.setItem('authUser', JSON.stringify(updatedUser));
       }
-    } catch (error) {
+    } catch {
       throw new Error('Error al actualizar configuración');
     }
   };
@@ -417,7 +422,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       
       setUser(null);
       setSession(null);
-    } catch (error) {
+    } catch {
       throw new Error('Error al eliminar cuenta');
     }
   };

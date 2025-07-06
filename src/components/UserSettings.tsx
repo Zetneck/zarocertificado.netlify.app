@@ -55,7 +55,7 @@ export function UserSettings({ onBack, mode, toggleMode }: UserSettingsProps) {
     try {
       await updateUserSettings({ [setting]: value });
       setMessage({ type: 'success', text: 'Configuración actualizada' });
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Error al actualizar configuración' });
       // Revertir cambio en caso de error
       setSettings(prev => ({ ...prev, [setting]: !value }));
@@ -72,7 +72,7 @@ export function UserSettings({ onBack, mode, toggleMode }: UserSettingsProps) {
       await deleteAccount();
       setMessage({ type: 'success', text: 'Cuenta eliminada correctamente' });
       setShowDeleteDialog(false);
-    } catch (error) {
+    } catch {
       setMessage({ type: 'error', text: 'Error al eliminar la cuenta' });
     } finally {
       setLoading(false);
