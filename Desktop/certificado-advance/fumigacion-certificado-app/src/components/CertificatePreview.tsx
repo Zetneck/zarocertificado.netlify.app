@@ -21,7 +21,7 @@ export function CertificatePreview({
     if (!fechaInicio || !fechaFinal) return '';
     const inicio = dayjs(fechaInicio, 'DD/MM/YYYY');
     const final = dayjs(fechaFinal, 'DD/MM/YYYY');
-    const dias = final.diff(inicio, 'day') + 1;
+    const dias = final.diff(inicio, 'day'); // Removido el +1 para que coincida con el formulario
     return `${dias} días`;
   };
 

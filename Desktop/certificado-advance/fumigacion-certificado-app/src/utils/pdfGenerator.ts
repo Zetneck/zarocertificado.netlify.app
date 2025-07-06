@@ -8,7 +8,13 @@ export interface CertificateData {
   fechaFinal: string;
 }
 
-export const generatePDF = async (data: CertificateData) => {
+export interface PDFResult {
+  success: boolean;
+  fileName?: string;
+  error?: string;
+}
+
+export const generatePDF = async (data: CertificateData): Promise<PDFResult> => {
   try {
     const { folio, remolque, placas, fechaInicio, fechaFinal } = data;
     
@@ -439,7 +445,7 @@ export const generatePDF = async (data: CertificateData) => {
     doc.setFont('helvetica', 'italic');
     doc.setFontSize(10); // Aumentado de 9 a 10 para mejor visibilidad
     doc.setTextColor(0, 0, 0); // Color negro
-    centerText('Este certificado es válido únicamente para el vehículo y período especificados en el documento', currentY);
+    centerText('Este certificado garantiza que el vehículo ha sido fumigado según las normas establecidas', currentY);
 
     // Guardar el archivo
     const fileName = `certificado_fumigacion_${folio}_${new Date().toISOString().split('T')[0]}.pdf`;
