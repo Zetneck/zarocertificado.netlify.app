@@ -24,14 +24,14 @@ import {
   CreditCard,
   ArrowBack
 } from '@mui/icons-material';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthReal } from '../hooks/useAuthReal';
 
 interface UserProfileProps {
   onBack: () => void;
 }
 
 export function UserProfile({ onBack }: UserProfileProps) {
-  const { user, updateUserProfile } = useAuth();
+  const { user, updateUserProfile } = useAuthReal();
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
     name: user?.name || '',

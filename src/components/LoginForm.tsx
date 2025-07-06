@@ -21,7 +21,7 @@ import {
   Security,
   Login as LoginIcon
 } from '@mui/icons-material';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthReal } from '../hooks/useAuthReal';
 import { useTheme } from '@mui/material/styles';
 
 export function LoginForm() {
@@ -30,7 +30,7 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
-  const { login, isLoading } = useAuth();
+  const { signIn, loading } = useAuthReal();
   const theme = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,13 +42,12 @@ export function LoginForm() {
       return;
     }
 
-    const result = await login({ email, password });
-    
-    if (!result.success) {
-      setError(result.error || 'Error al iniciar sesión');
+    try {
+      await signIn(email, password);
+      // Si es exitoso, el usuario será redirigido automáticamente
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Error al iniciar sesión');
     }
-    // Si success es true pero requiresTwoFactor también, 
-    // el componente TwoFactorVerification se mostrará automáticamente
   };
 
   const demoAccounts = [
@@ -228,11 +227,11 @@ export function LoginForm() {
               fullWidth
               variant="contained"
               size="large"
-              disabled={isLoading}
-              startIcon={isLoading ? <CircularProgress size={20} /> : <LoginIcon />}
+              disabled={loading}
+              startIcon={loading ? <CircularProgress size={20} /> : <LoginIcon />}
               sx={{ mt: 3, mb: 2 }}
             >
-              {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
+              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </Button>
           </form>
 

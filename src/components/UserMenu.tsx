@@ -17,7 +17,7 @@ import {
   Settings,
   History
 } from '@mui/icons-material';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthReal } from '../hooks/useAuthReal';
 import { TwoFactorSettings } from './TwoFactorSettings';
 import { AccessHistory } from './AccessHistory';
 import { UserProfile } from './UserProfile';
@@ -29,7 +29,7 @@ interface UserMenuProps {
 }
 
 export function UserMenu({ mode, toggleMode }: UserMenuProps) {
-  const { user, logout } = useAuth();
+  const { user, signOut } = useAuthReal();
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [showSecuritySettings, setShowSecuritySettings] = useState(false);
   const [showLoginHistory, setShowLoginHistory] = useState(false);
@@ -45,7 +45,7 @@ export function UserMenu({ mode, toggleMode }: UserMenuProps) {
   };
 
   const handleLogout = async () => {
-    await logout();
+    signOut();
     handleMenuClose();
   };
 

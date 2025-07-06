@@ -29,7 +29,7 @@ import {
   Warning,
   ArrowBack
 } from '@mui/icons-material';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthReal } from '../hooks/useAuthReal';
 
 interface UserSettingsProps {
   onBack: () => void;
@@ -38,7 +38,7 @@ interface UserSettingsProps {
 }
 
 export function UserSettings({ onBack, mode, toggleMode }: UserSettingsProps) {
-  const { user, updateUserSettings, deleteAccount } = useAuth();
+  const { user, updateUserSettings, deleteAccount } = useAuthReal();
   const [settings, setSettings] = useState({
     emailNotifications: user?.settings?.emailNotifications ?? true,
     smsNotifications: user?.settings?.smsNotifications ?? false,
