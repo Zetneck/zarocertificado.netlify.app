@@ -95,7 +95,7 @@ export const handler: Handler = async (event) => {
     // Generar JWT
     const token = jwt.sign(
       { 
-        userId: user.id, 
+        id: user.id, 
         email: user.email,
         role: user.role 
       },
