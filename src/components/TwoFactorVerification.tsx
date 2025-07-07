@@ -32,9 +32,31 @@ export function TwoFactorVerification() {
   const [canResend, setCanResend] = useState(false);
   
   const { signOut } = useAuthReal();
-  // Funciones de 2FA no implementadas aún
-  const verifyTwoFactor = async (_params: { code: string; method: string }) => ({ success: false, error: 'No implementado' });
-  const resendTwoFactorCode = async (_method: string) => ({ success: false, error: 'No implementado' });
+  
+  // Funciones de 2FA (versión demo)
+  const verifyTwoFactor = async ({ code, method }: { code: string; method: string }) => {
+    // Simular verificación (código demo: 123456)
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simular delay
+    
+    if (code === '123456') {
+      return { success: true };
+    }
+    
+    return { 
+      success: false, 
+      error: `Código incorrecto para ${method}. Usa: 123456` 
+    };
+  };
+  
+  const resendTwoFactorCode = async () => {
+    // Simular reenvío
+    await new Promise(resolve => setTimeout(resolve, 500));
+    return { 
+      success: true, 
+      message: 'Código reenviado exitosamente' 
+    };
+  };
+  
   const theme = useTheme();
 
   const methods = [
@@ -94,13 +116,13 @@ export function TwoFactorVerification() {
   };
 
   const handleResend = async () => {
-    const result = await resendTwoFactorCode(selectedMethod);
+    const result = await resendTwoFactorCode();
     if (result.success) {
       setTimeRemaining(300);
       setCanResend(false);
       setError(null);
     } else {
-      setError(result.error || 'Error al reenviar código');
+      setError('Error al reenviar código');
     }
   };
 
@@ -276,13 +298,15 @@ export function TwoFactorVerification() {
               value={code}
               onChange={(e) => handleCodeChange(e.target.value)}
               placeholder="123456"
-              inputProps={{
-                style: { 
-                  textAlign: 'center', 
-                  fontSize: '1.5rem',
-                  letterSpacing: '0.5rem'
-                },
-                maxLength: 6
+              slotProps={{
+                input: {
+                  style: { 
+                    textAlign: 'center', 
+                    fontSize: '1.5rem',
+                    letterSpacing: '0.5rem'
+                  },
+                  inputMode: 'numeric'
+                }
               }}
               margin="normal"
               autoFocus
