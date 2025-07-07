@@ -67,18 +67,21 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
     setError(null);
 
     try {
-      // Intentar primero con authToken, luego con tempToken
+      // Obtener tokens disponibles
       const authToken = localStorage.getItem('authToken');
       const tempToken = localStorage.getItem('tempToken');
       
-      // Token validation...
+      console.log('🔍 Tokens disponibles:', { 
+        hasAuth: !!authToken, 
+        hasTemp: !!tempToken 
+      });
       
       let response;
       
       if (authToken) {
-        // Using authToken...
         // Usuario existente con token de autenticación
-        response = await fetch('/.netlify/functions/debug-qr-token', {
+        console.log('🔑 Usando authToken para generar QR');
+        response = await fetch('/.netlify/functions/generate-2fa-qr', {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${authToken}`,
@@ -86,9 +89,9 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
           },
         });
       } else if (tempToken) {
-        // Using tempToken...
         // Usuario nuevo con token temporal
-        response = await fetch('/.netlify/functions/debug-qr-token', {
+        console.log('🔑 Usando tempToken para generar QR');
+        response = await fetch('/.netlify/functions/generate-2fa-qr', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -99,48 +102,23 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
         throw new Error('No hay token de autenticación disponible');
       }
 
-      const data = await response.json();
-      
       if (!response.ok) {
-        throw new Error(data.message || data.error || 'Error en debug');
+        const errorData = await response.json();
+        throw new Error(errorData.message || errorData.error || `Error ${response.status}`);
       }
 
-      // Si el debug es exitoso, intentar con la función real
+      const data = await response.json();
+      
       if (data.success) {
-        
-        let realResponse;
-        if (authToken) {
-          realResponse = await fetch('/.netlify/functions/generate-2fa-qr', {
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${authToken}`,
-              'Content-Type': 'application/json',
-            },
-          });
-        } else if (tempToken) {
-          realResponse = await fetch('/.netlify/functions/generate-2fa-qr', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ tempToken }),
-          });
-        }
-
-        if (realResponse) {
-          const realData = await realResponse.json();
-          
-          if (realResponse.ok) {
-            setQrData(realData);
-            setActiveStep(1);
-          } else {
-            throw new Error(realData.message || realData.error || 'Error generando QR real');
-          }
-        }
+        console.log('✅ QR generado exitosamente');
+        setQrData(data);
+        setActiveStep(1);
+      } else {
+        throw new Error(data.message || 'Error generando código QR');
       }
 
     } catch (error) {
-      console.error('Error generando QR:', error);
+      console.error('❌ Error generando QR:', error);
       setError(error instanceof Error ? error.message : 'Error generando código QR');
     } finally {
       setLoading(false);
@@ -163,10 +141,18 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
 
     setVerifying(true);
     setVerificationError(null);    
+    
     try {
-      
+      const authToken = localStorage.getItem('authToken');
       const tempToken = localStorage.getItem('tempToken');
-      if (!tempToken) {
+      
+      console.log('🔍 Verificando código 2FA:', { 
+        hasAuth: !!authToken, 
+        hasTemp: !!tempToken,
+        codeLength: verificationCode.length
+      });
+
+      if (!authToken && !tempToken) {
         throw new Error('Sesión expirada. Inicia sesión nuevamente.');
       }
 
@@ -176,9 +162,17 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           code: verificationCode.trim(), 
-          tempToken 
+          tempToken: tempToken || undefined,
+          authToken: authToken || undefined
         }),
       });
+
+      // Verificar si la respuesta es HTML en lugar de JSON (error de servidor)
+      const contentType = response.headers.get('content-type');
+      if (!contentType || !contentType.includes('application/json')) {
+        console.error('❌ El servidor devolvió HTML en lugar de JSON');
+        throw new Error('Error del servidor. Verifica la conexión.');
+      }
 
       const data = await response.json();
 
@@ -186,8 +180,9 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
         console.error('❌ Error del servidor:', data);
         
         // Si el token expiró, regenerar el QR
-        if (data.error?.includes('Token temporal') || data.error?.includes('inválido') || data.error?.includes('expirado')) {
-          // Token expired, regenerating...
+        if (data.error?.includes('Token temporal') || 
+            data.error?.includes('inválido') || 
+            data.error?.includes('expirado')) {
           setActiveStep(0);
           setVerificationCode('');
           setError('Tu sesión expiró. Regenerando código QR...');

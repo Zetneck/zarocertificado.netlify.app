@@ -37,31 +37,45 @@ export const handler: Handler = async (event) => {
   let client: Client | null = null;
 
   try {
-    const { code, tempToken } = JSON.parse(event.body || '{}');
+    const { code, tempToken, authToken: providedAuthToken } = JSON.parse(event.body || '{}');
 
     console.log('=== COMPLETAR SETUP 2FA ===');
-    console.log('Código recibido:', { hasCode: !!code, codeLength: code?.length });
+    console.log('Datos recibidos:', { 
+      hasCode: !!code, 
+      codeLength: code?.length,
+      hasTempToken: !!tempToken,
+      hasAuthToken: !!providedAuthToken
+    });
 
-    if (!code || !tempToken) {
+    if (!code) {
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ error: 'Código y token temporal requeridos' }),
+        body: JSON.stringify({ error: 'Código requerido' }),
       };
     }
 
-    // Verificar el token temporal
+    if (!tempToken && !providedAuthToken) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Token de autorización requerido' }),
+      };
+    }
+
+    // Verificar el token (temporal o de autenticación)
     let decodedToken: DecodedToken;
     try {
-      decodedToken = jwt.verify(tempToken, JWT_SECRET) as DecodedToken;
+      const tokenToVerify = tempToken || providedAuthToken;
+      decodedToken = jwt.verify(tokenToVerify, JWT_SECRET) as DecodedToken;
       console.log('Token decodificado para setup:', { userId: decodedToken.id, email: decodedToken.email });
     } catch (error) {
-      console.error('Error verificando token temporal:', error);
+      console.error('Error verificando token:', error);
       return {
         statusCode: 401,
         headers,
         body: JSON.stringify({ 
-          error: 'Token temporal inválido',
+          error: 'Token inválido',
           message: 'El token ha expirado. Inicia sesión nuevamente.'
         }),
       };
