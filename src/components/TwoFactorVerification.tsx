@@ -31,31 +31,7 @@ export function TwoFactorVerification() {
   const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutos
   const [canResend, setCanResend] = useState(false);
   
-  const { signOut } = useAuthReal();
-  
-  // Funciones de 2FA (versión demo)
-  const verifyTwoFactor = async ({ code, method }: { code: string; method: string }) => {
-    // Simular verificación (código demo: 123456)
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simular delay
-    
-    if (code === '123456') {
-      return { success: true };
-    }
-    
-    return { 
-      success: false, 
-      error: `Código incorrecto para ${method}. Usa: 123456` 
-    };
-  };
-  
-  const resendTwoFactorCode = async () => {
-    // Simular reenvío
-    await new Promise(resolve => setTimeout(resolve, 500));
-    return { 
-      success: true, 
-      message: 'Código reenviado exitosamente' 
-    };
-  };
+  const { signOut, verifyTwoFactor } = useAuthReal();
   
   const theme = useTheme();
 
@@ -106,24 +82,22 @@ export function TwoFactorVerification() {
       return;
     }
 
-    const result = await verifyTwoFactor({ code, method: selectedMethod });
+    const result = await verifyTwoFactor(code);
     
     if (!result.success) {
-      setError(result.error || 'Código incorrecto');
+      setError(result.message || 'Código incorrecto');
     }
+    // Si es exitoso, el contexto maneja la autenticación automáticamente
     
     setIsVerifying(false);
   };
 
   const handleResend = async () => {
-    const result = await resendTwoFactorCode();
-    if (result.success) {
-      setTimeRemaining(300);
-      setCanResend(false);
-      setError(null);
-    } else {
-      setError('Error al reenviar código');
-    }
+    // Simular reenvío de código
+    await new Promise(resolve => setTimeout(resolve, 500));
+    setTimeRemaining(300);
+    setCanResend(false);
+    setError(null);
   };
 
   const formatTime = (seconds: number) => {

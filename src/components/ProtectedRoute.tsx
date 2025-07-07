@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Box, CircularProgress, Typography, ThemeProvider } from '@mui/material';
 import { useAuthReal } from '../hooks/useAuthReal';
 import { LoginForm } from './LoginForm';
+import { TwoFactorVerification } from './TwoFactorVerification';
 import { ThemeToggleFloating } from './ThemeToggleFloating';
 import { lightTheme, darkTheme } from '../themes/theme';
 
@@ -11,7 +12,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { user, isAuthenticated, loading } = useAuthReal();
+  const { user, isAuthenticated, loading, requiresTwoFactor } = useAuthReal();
   const [mode, setMode] = useState<'light' | 'dark'>('dark');
   const toggleMode = () => setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
 
@@ -46,6 +47,16 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
   // Si no está autenticado, mostrar login
   if (!isAuthenticated || !user) {
+    // Si requiere 2FA, mostrar el componente de verificación
+    if (requiresTwoFactor) {
+      return (
+        <ThemeProvider theme={theme}>
+          <TwoFactorVerification />
+        </ThemeProvider>
+      );
+    }
+    
+    // Si no, mostrar login normal
     return (
       <ThemeProvider theme={theme}>
         <ThemeToggleFloating mode={mode} toggleMode={toggleMode} />

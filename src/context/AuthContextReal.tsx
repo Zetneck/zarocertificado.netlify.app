@@ -24,7 +24,10 @@ interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ success: boolean }>;
+  requiresTwoFactor: boolean;
+  tempUser: User | null;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; requiresTwoFactor?: boolean }>;
+  verifyTwoFactor: (code: string) => Promise<{ success: boolean; message?: string }>;
   signOut: () => void;
   updateUserProfile: (profileData: Partial<User>) => Promise<void>;
   updateUserSettings: (settingsData: UserSettings) => Promise<void>;
@@ -42,6 +45,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const [tempUser, setTempUser] = useState<User | null>(null);
 
   // API base URL
   const API_BASE = '/.netlify/functions';
@@ -107,14 +112,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || 'Error de autenticación');
       }
 
-      // Guardar token y datos del usuario
-      localStorage.setItem('authToken', data.token);
-      localStorage.setItem('user', JSON.stringify(data.user));
-      
-      setUser(data.user);
-      setIsAuthenticated(true);
-      
-      return { success: true };
+      // Verificar si el usuario tiene 2FA habilitado
+      if (data.user.twoFactorEnabled) {
+        // Guardar usuario temporalmente (sin autenticar completamente)
+        setTempUser(data.user);
+        setRequiresTwoFactor(true);
+        localStorage.setItem('tempToken', data.token);
+        return { success: true, requiresTwoFactor: true };
+      } else {
+        // Login normal sin 2FA
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        setUser(data.user);
+        setIsAuthenticated(true);
+        setRequiresTwoFactor(false);
+        setTempUser(null);
+        
+        return { success: true, requiresTwoFactor: false };
+      }
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error de conexión';
       throw new Error(message);
@@ -126,8 +142,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = () => {
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
+    localStorage.removeItem('tempToken');
     setUser(null);
     setIsAuthenticated(false);
+    setRequiresTwoFactor(false);
+    setTempUser(null);
   };
 
   const updateUserProfile = async (profileData: Partial<User>) => {
@@ -248,11 +267,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Función para verificar código 2FA
+  const verifyTwoFactor = async (code: string): Promise<{ success: boolean; message?: string }> => {
+    try {
+      // Verificar código demo (123456)
+      if (code === '123456' && tempUser) {
+        // Mover usuario temporal a usuario autenticado
+        const tempToken = localStorage.getItem('tempToken');
+        if (tempToken) {
+          localStorage.setItem('authToken', tempToken);
+          localStorage.setItem('user', JSON.stringify(tempUser));
+          localStorage.removeItem('tempToken');
+          
+          setUser(tempUser);
+          setIsAuthenticated(true);
+          setRequiresTwoFactor(false);
+          setTempUser(null);
+          
+          return { success: true, message: 'Verificación exitosa' };
+        }
+      }
+      
+      return { success: false, message: 'Código incorrecto. Usa: 123456' };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error en verificación 2FA';
+      return { success: false, message };
+    }
+  };
+
   const value = {
     user,
     isAuthenticated,
     loading,
+    requiresTwoFactor,
+    tempUser,
     signIn,
+    verifyTwoFactor,
     signOut,
     updateUserProfile,
     updateUserSettings,
