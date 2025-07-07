@@ -131,7 +131,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     
     try {
-      const response = await fetch(`${API_BASE}/auth-login-testing`, {
+      const response = await fetch(`${API_BASE}/auth-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
@@ -148,14 +148,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Verificar si el usuario tiene 2FA habilitado
       if (data.user.twoFactorEnabled) {
-        console.log('✅ 2FA requerido - mostrando pantalla de verificación');
-        console.log('🔍 Estableciendo estados para 2FA:', {
-          tempUser: data.user.email,
-          requiresTwoFactor: true,
-          isAuthenticated: false,
-          user: null
-        });
-        
         // Limpiar cualquier autenticación previa
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
@@ -163,18 +155,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Guardar datos temporales para el proceso 2FA
         setTempUser(data.user);
         setRequiresTwoFactor(true);
-        setIsAuthenticated(false); // Importante: NO autenticar aún
-        setUser(null); // Limpiar usuario actual
+        setIsAuthenticated(false);
+        setUser(null);
         
         localStorage.setItem('tempToken', data.token);
         localStorage.setItem('tempUser', JSON.stringify(data.user));
-        
-        console.log('🔍 Estados después de configurar 2FA - deberían ser:', {
-          tempUser: 'data.user',
-          requiresTwoFactor: true,
-          isAuthenticated: false,
-          user: null
-        });
         
         return { success: true, requiresTwoFactor: true };
       } else {

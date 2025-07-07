@@ -109,19 +109,14 @@ export const handler: Handler = async (event) => {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password_hash, two_factor_secret, two_factor_enabled, created_at, last_login, updated_at, ...baseUserData } = user;
     
-    // TEMPORAL: Para testing, forzar 2FA habilitado para admin@zaro.com
-    const forceTwoFactor = user.email === 'admin@zaro.com';
-    
     // Convertir a camelCase para el frontend
     const userData = {
       ...baseUserData,
-      twoFactorEnabled: forceTwoFactor || two_factor_enabled || false,
+      twoFactorEnabled: two_factor_enabled || false,
       createdAt: created_at,
       lastLogin: last_login,
       updatedAt: updated_at
     };
-
-    console.log(`🔍 Login para ${user.email}: 2FA = ${userData.twoFactorEnabled} (forzado: ${forceTwoFactor})`);
 
     return {
       statusCode: 200,
