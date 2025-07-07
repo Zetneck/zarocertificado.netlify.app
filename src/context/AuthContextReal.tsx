@@ -380,6 +380,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     
     try {
+      console.log('🔄 Intentando login:', { email });
+      
       const response = await fetch(`${API_BASE}/auth-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -387,8 +389,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       const data = await response.json();
+      
+      console.log('📡 Respuesta del servidor:', { 
+        ok: response.ok, 
+        status: response.status, 
+        data 
+      });
 
       if (!response.ok) {
+        console.log('❌ Error del servidor:', { 
+          status: response.status, 
+          error: data.error 
+        });
         throw new Error(data.error || 'Error de autenticación');
       }
 

@@ -61,7 +61,11 @@ export function LoginForm() {
     }
 
     try {
+      console.log('🔄 Iniciando login desde LoginForm:', { email });
+      
       const result = await signIn(email, password);
+      
+      console.log('✅ Resultado del signIn:', result);
       
       // El ProtectedRoute manejará automáticamente la redirección
       // basándose en los estados del contexto de autenticación
@@ -70,22 +74,24 @@ export function LoginForm() {
         console.log('✅ Login exitoso');
       }
     } catch (error) {
-      console.error('❌ Error en login:', error);
+      console.error('❌ Error capturado en LoginForm:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
+      console.log('❌ Mensaje de error procesado:', errorMessage);
       
       // Manejar diferentes tipos de errores
       if (errorMessage.includes('Credenciales incorrectas')) {
         setError('❌ Correo electrónico o contraseña incorrectos. Por favor verifica tus datos.');
-      } else if (errorMessage.includes('conexión') || errorMessage.includes('network')) {
+      } else if (errorMessage.includes('Email y contraseña son requeridos')) {
+        setError('📝 Por favor completa todos los campos requeridos.');
+      } else if (errorMessage.includes('Error interno del servidor')) {
+        setError('🔧 Error del servidor. Por favor intenta nuevamente en unos momentos.');
+      } else if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('conexión')) {
         setError('🌐 Error de conexión. Por favor verifica tu internet e intenta nuevamente.');
-      } else if (errorMessage.includes('Usuario no encontrado')) {
-        setFieldErrors({ email: 'No existe una cuenta con este correo electrónico' });
-      } else if (errorMessage.includes('contraseña')) {
-        setFieldErrors({ password: 'Contraseña incorrecta' });
       } else if (errorMessage.includes('bloqueado') || errorMessage.includes('suspendido')) {
         setError('🔒 Tu cuenta ha sido suspendida. Contacta al administrador.');
       } else {
+        // Para cualquier otro error, mostrar el mensaje específico
         setError(`⚠️ ${errorMessage}`);
       }
     }
