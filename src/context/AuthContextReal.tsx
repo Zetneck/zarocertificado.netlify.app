@@ -69,7 +69,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const initAuth = async () => {
       const token = localStorage.getItem('authToken');
+      const tempToken = localStorage.getItem('tempToken');
       
+      console.log('🔍 initAuth - tokens:', { authToken: !!token, tempToken: !!tempToken });
+      
+      // Si hay un tempToken, significa que estamos en proceso de 2FA
+      if (tempToken && !token) {
+        console.log('🔍 Proceso 2FA en curso - no autenticar aún');
+        const tempUserData = localStorage.getItem('tempUser');
+        if (tempUserData) {
+          try {
+            const parsedTempUser = JSON.parse(tempUserData);
+            setTempUser(parsedTempUser);
+            setRequiresTwoFactor(true);
+            setIsAuthenticated(false);
+          } catch (error) {
+            console.error('Error parsing temp user:', error);
+            localStorage.removeItem('tempToken');
+            localStorage.removeItem('tempUser');
+          }
+        }
+        setLoading(false);
+        return;
+      }
+      
+      // Si hay authToken, verificar autenticación normal
       if (token) {
         try {
           const response = await authenticatedFetch(`${API_BASE}/user`);
@@ -78,15 +102,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             const data = await response.json();
             setUser(data.user);
             setIsAuthenticated(true);
+            setRequiresTwoFactor(false);
+            setTempUser(null);
+            console.log('🔍 Usuario autenticado desde localStorage');
           } else {
             // Token inválido, limpiar
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
+            localStorage.removeItem('tempToken');
+            localStorage.removeItem('tempUser');
           }
         } catch (error) {
           console.error('Error al verificar autenticación:', error);
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
+          localStorage.removeItem('tempToken');
+          localStorage.removeItem('tempUser');
         }
       }
       
@@ -118,13 +149,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Verificar si el usuario tiene 2FA habilitado
       if (data.user.twoFactorEnabled) {
         console.log('✅ 2FA requerido - mostrando pantalla de verificación');
-        // Guardar usuario temporalmente (sin autenticar completamente)
+        
+        // Limpiar cualquier autenticación previa
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        
+        // Guardar datos temporales para el proceso 2FA
         setTempUser(data.user);
         setRequiresTwoFactor(true);
+        setIsAuthenticated(false); // Importante: NO autenticar aún
+        setUser(null); // Limpiar usuario actual
+        
         localStorage.setItem('tempToken', data.token);
+        localStorage.setItem('tempUser', JSON.stringify(data.user));
+        
         return { success: true, requiresTwoFactor: true };
       } else {
         console.log('❌ 2FA no requerido - login directo');
+        
+        // Limpiar cualquier proceso 2FA previo
+        localStorage.removeItem('tempToken');
+        localStorage.removeItem('tempUser');
+        
         // Login normal sin 2FA
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
@@ -145,13 +191,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const signOut = () => {
+    // Limpiar todos los tokens y datos
     localStorage.removeItem('authToken');
     localStorage.removeItem('user');
     localStorage.removeItem('tempToken');
+    localStorage.removeItem('tempUser');
+    
+    // Limpiar todos los estados
     setUser(null);
     setIsAuthenticated(false);
     setRequiresTwoFactor(false);
     setTempUser(null);
+    
+    console.log('🔍 SignOut - todos los estados limpiados');
   };
 
   const updateUserProfile = async (profileData: Partial<User>) => {
@@ -275,27 +327,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Función para verificar código 2FA
   const verifyTwoFactor = async (code: string): Promise<{ success: boolean; message?: string }> => {
     try {
+      console.log('🔍 Verificando código 2FA:', code);
+      
       // Verificar código demo (123456)
       if (code === '123456' && tempUser) {
         // Mover usuario temporal a usuario autenticado
         const tempToken = localStorage.getItem('tempToken');
         if (tempToken) {
+          // Mover token temporal a token de autenticación
           localStorage.setItem('authToken', tempToken);
           localStorage.setItem('user', JSON.stringify(tempUser));
-          localStorage.removeItem('tempToken');
           
+          // Limpiar datos temporales
+          localStorage.removeItem('tempToken');
+          localStorage.removeItem('tempUser');
+          
+          // Actualizar estados
           setUser(tempUser);
           setIsAuthenticated(true);
           setRequiresTwoFactor(false);
           setTempUser(null);
           
+          console.log('✅ 2FA verificado - usuario autenticado');
           return { success: true, message: 'Verificación exitosa' };
         }
       }
       
+      console.log('❌ Código 2FA incorrecto');
       return { success: false, message: 'Código incorrecto. Usa: 123456' };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error en verificación 2FA';
+      console.error('❌ Error en verificación 2FA:', message);
       return { success: false, message };
     }
   };
