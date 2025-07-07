@@ -28,6 +28,10 @@ export function LoginForm() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
   
   const { signIn, loading } = useAuthReal();
   const theme = useTheme();
@@ -35,9 +39,24 @@ export function LoginForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+    setFieldErrors({});
 
+    // Validaciones básicas
     if (!email || !password) {
-      setError('Por favor completa todos los campos');
+      if (!email && !password) {
+        setError('Por favor ingresa tu correo electrónico y contraseña');
+      } else if (!email) {
+        setFieldErrors({ email: 'El correo electrónico es requerido' });
+      } else if (!password) {
+        setFieldErrors({ password: 'La contraseña es requerida' });
+      }
+      return;
+    }
+
+    // Validación de formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setFieldErrors({ email: 'Por favor ingresa un correo electrónico válido' });
       return;
     }
 
@@ -48,10 +67,27 @@ export function LoginForm() {
       // basándose en los estados del contexto de autenticación
       if (result?.success) {
         // Login successful
+        console.log('✅ Login exitoso');
       }
     } catch (error) {
       console.error('❌ Error en login:', error);
-      setError(error instanceof Error ? error.message : 'Error al iniciar sesión');
+      
+      const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
+      
+      // Manejar diferentes tipos de errores
+      if (errorMessage.includes('Credenciales incorrectas')) {
+        setError('❌ Correo electrónico o contraseña incorrectos. Por favor verifica tus datos.');
+      } else if (errorMessage.includes('conexión') || errorMessage.includes('network')) {
+        setError('🌐 Error de conexión. Por favor verifica tu internet e intenta nuevamente.');
+      } else if (errorMessage.includes('Usuario no encontrado')) {
+        setFieldErrors({ email: 'No existe una cuenta con este correo electrónico' });
+      } else if (errorMessage.includes('contraseña')) {
+        setFieldErrors({ password: 'Contraseña incorrecta' });
+      } else if (errorMessage.includes('bloqueado') || errorMessage.includes('suspendido')) {
+        setError('🔒 Tu cuenta ha sido suspendida. Contacta al administrador.');
+      } else {
+        setError(`⚠️ ${errorMessage}`);
+      }
     }
   };
 
@@ -199,13 +235,22 @@ export function LoginForm() {
               label="Correo electrónico"
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                // Limpiar errores cuando el usuario empiece a escribir
+                if (fieldErrors.email) {
+                  setFieldErrors(prev => ({ ...prev, email: undefined }));
+                }
+                if (error) setError(null);
+              }}
               margin="normal"
               size={window.innerWidth < 600 ? "small" : "medium"}
+              error={!!fieldErrors.email}
+              helperText={fieldErrors.email}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Email color="action" sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />
+                    <Email color={fieldErrors.email ? "error" : "action"} sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />
                   </InputAdornment>
                 )
               }}
@@ -216,13 +261,22 @@ export function LoginForm() {
               label="Contraseña"
               type={showPassword ? 'text' : 'password'}
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                // Limpiar errores cuando el usuario empiece a escribir
+                if (fieldErrors.password) {
+                  setFieldErrors(prev => ({ ...prev, password: undefined }));
+                }
+                if (error) setError(null);
+              }}
               margin="normal"
               size={window.innerWidth < 600 ? "small" : "medium"}
+              error={!!fieldErrors.password}
+              helperText={fieldErrors.password}
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <Lock color="action" sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />
+                    <Lock color={fieldErrors.password ? "error" : "action"} sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />
                   </InputAdornment>
                 ),
                 endAdornment: (
@@ -244,10 +298,24 @@ export function LoginForm() {
                 severity="error" 
                 sx={{ 
                   mt: 2, 
-                  fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                  fontSize: { xs: '0.8rem', sm: '0.875rem' },
+                  '& .MuiAlert-message': {
+                    width: '100%'
+                  }
                 }}
+                onClose={() => setError(null)}
               >
-                {error}
+                <Box>
+                  {error}
+                  {error.includes('Credenciales incorrectas') && (
+                    <Box sx={{ mt: 1, fontSize: '0.85em', opacity: 0.8 }}>
+                      💡 Consejos:
+                      <br />• Verifica que el correo esté escrito correctamente
+                      <br />• Asegúrate de que la contraseña sea la correcta
+                      <br />• Revisa si tienes activado Caps Lock
+                    </Box>
+                  )}
+                </Box>
               </Alert>
             )}
 
