@@ -1,4 +1,3 @@
-import React, { useState, useEffect, useCallback } from 'react';
 import {
   Dialog,
   DialogTitle,
@@ -6,26 +5,12 @@ import {
   DialogActions,
   Button,
   Typography,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
-  Chip,
-  Box,
-  Divider,
-  CircularProgress
+  Box
 } from '@mui/material';
 import {
-  Computer,
-  Smartphone,
   Security,
-  CheckCircle,
-  Error,
   Schedule
 } from '@mui/icons-material';
-import { useAuthReal } from '../hooks/useAuthReal';
-import type { LoginAttempt } from '../types/auth';
 
 interface AccessHistoryProps {
   open: boolean;
@@ -33,47 +18,27 @@ interface AccessHistoryProps {
 }
 
 export function AccessHistory({ open, onClose }: AccessHistoryProps) {
-  useAuthReal(); // Para asegurar autenticación
-  // Función de historial no implementada aún
-  const getLoginHistory = async () => [];
-  const [attempts, setAttempts] = useState<LoginAttempt[]>([]);
-  const [loading, setLoading] = useState(false);
-
-  const loadHistory = useCallback(async () => {
-    setLoading(true);
-    try {
-      const history = await getLoginHistory();
-      setAttempts(history);
-    } catch (error) {
-      console.error('Error loading access history:', error);
-    } finally {
-      setLoading(false);
+  // Datos de ejemplo para mostrar el diseño
+  const sampleData = [
+    {
+      date: '15 de Diciembre 2024, 14:30',
+      ip: '192.168.1.100',
+      device: 'Windows Chrome',
+      status: 'Exitoso'
+    },
+    {
+      date: '14 de Diciembre 2024, 09:15',
+      ip: '192.168.1.100', 
+      device: 'Windows Chrome',
+      status: 'Exitoso'
+    },
+    {
+      date: '13 de Diciembre 2024, 16:45',
+      ip: '192.168.1.105',
+      device: 'Android Mobile',
+      status: 'Fallido'
     }
-  }, [getLoginHistory]);
-
-  useEffect(() => {
-    if (open) {
-      loadHistory();
-    }
-  }, [open, loadHistory]);
-
-  const getStatusIcon = (attempt: LoginAttempt) => {
-    if (attempt.success) {
-      return <CheckCircle color="success" />;
-    }
-    return <Error color="error" />;
-  };
-
-  const getDeviceIcon = (userAgent: string) => {
-    if (userAgent.includes('Mobile') || userAgent.includes('Android') || userAgent.includes('iPhone')) {
-      return <Smartphone />;
-    }
-    return <Computer />;
-  };
-
-  const getStatusColor = (attempt: LoginAttempt): 'success' | 'error' => {
-    return attempt.success ? 'success' : 'error';
-  };
+  ];
 
   return (
     <Dialog 
@@ -101,79 +66,74 @@ export function AccessHistory({ open, onClose }: AccessHistoryProps) {
         </Typography>
       </DialogTitle>
 
-      <DialogContent sx={{ p: 0 }}>
-        {loading ? (
-          <Box sx={{ 
-            display: 'flex', 
-            justifyContent: 'center', 
-            alignItems: 'center', 
-            p: 4 
-          }}>
-            <CircularProgress />
-          </Box>
-        ) : attempts.length === 0 ? (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Schedule sx={{ fontSize: 48, color: 'text.secondary', mb: 2 }} />
-            <Typography variant="body1" color="text.secondary">
-              No hay historial de accesos disponible
-            </Typography>
-          </Box>
-        ) : (
-          <List sx={{ py: 0 }}>
-            {attempts.map((attempt, index) => (
-              <React.Fragment key={`${attempt.email}-${attempt.timestamp.getTime()}-${index}`}>
-                <ListItem sx={{ px: 3, py: 2 }}>
-                  <ListItemAvatar>
-                    <Avatar sx={{ 
-                      bgcolor: getStatusColor(attempt) === 'success' ? 'success.light' : 'error.light',
-                      color: getStatusColor(attempt) === 'success' ? 'success.dark' : 'error.dark'
-                    }}>
-                      {getDeviceIcon(attempt.userAgent)}
-                    </Avatar>
-                  </ListItemAvatar>
-                  
-                  <ListItemText
-                    primary={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
-                        <Typography variant="subtitle1" component="span">
-                          {new Date(attempt.timestamp).toLocaleString('es-ES')}
-                        </Typography>
-                        <Chip
-                          icon={getStatusIcon(attempt)}
-                          label={attempt.success ? 'Exitoso' : 'Fallido'}
-                          size="small"
-                          color={getStatusColor(attempt)}
-                          variant="outlined"
-                        />
-                      </Box>
-                    }
-                    secondary={
-                      <Box sx={{ mt: 1 }}>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                          <strong>Email:</strong> {attempt.email}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                          <strong>IP:</strong> {attempt.ipAddress}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary" gutterBottom>
-                          <strong>Dispositivo:</strong> {attempt.userAgent.length > 50 
-                            ? `${attempt.userAgent.substring(0, 50)}...` 
-                            : attempt.userAgent}
-                        </Typography>
-                        {attempt.twoFactorUsed && (
-                          <Typography variant="body2" color="primary.main" sx={{ mt: 1 }}>
-                            <strong>2FA:</strong> Utilizado
-                          </Typography>
-                        )}
-                      </Box>
-                    }
-                  />
-                </ListItem>
-                {index < attempts.length - 1 && <Divider />}
-              </React.Fragment>
-            ))}
-          </List>
-        )}
+      <DialogContent sx={{ p: 3 }}>
+        <Box sx={{ textAlign: 'center', mb: 3 }}>
+          <Schedule sx={{ fontSize: 48, color: 'primary.main', mb: 2 }} />
+          <Typography variant="h6" gutterBottom>
+            Funcionalidad en desarrollo
+          </Typography>
+          <Typography variant="body1" color="text.secondary" paragraph>
+            El historial de accesos estará disponible próximamente. Esta función mostrará:
+          </Typography>
+        </Box>
+
+        <Box sx={{ bgcolor: 'grey.50', p: 2, borderRadius: 1, mb: 2 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            📋 Información que se registrará:
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            • Fecha y hora de cada acceso
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            • Dirección IP desde donde se accede
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            • Tipo de dispositivo utilizado
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+            • Intentos exitosos y fallidos
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            • Uso de autenticación de dos factores
+          </Typography>
+        </Box>
+
+        <Box sx={{ p: 2, border: '1px solid', borderColor: 'divider', borderRadius: 1 }}>
+          <Typography variant="subtitle2" gutterBottom color="text.secondary">
+            Vista previa del diseño:
+          </Typography>
+          {sampleData.map((item, index) => (
+            <Box key={index} sx={{ 
+              display: 'flex', 
+              justifyContent: 'space-between', 
+              alignItems: 'center',
+              py: 1,
+              borderBottom: index < sampleData.length - 1 ? '1px solid' : 'none',
+              borderColor: 'grey.200'
+            }}>
+              <Box>
+                <Typography variant="body2" fontWeight="medium">
+                  {item.date}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {item.ip} • {item.device}
+                </Typography>
+              </Box>
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  px: 1, 
+                  py: 0.5, 
+                  borderRadius: 1,
+                  bgcolor: item.status === 'Exitoso' ? 'success.light' : 'error.light',
+                  color: item.status === 'Exitoso' ? 'success.dark' : 'error.dark'
+                }}
+              >
+                {item.status}
+              </Typography>
+            </Box>
+          ))}
+        </Box>
       </DialogContent>
 
       <DialogActions sx={{ p: 2, borderTop: '1px solid', borderColor: 'divider' }}>
