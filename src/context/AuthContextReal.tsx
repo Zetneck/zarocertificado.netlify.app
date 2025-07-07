@@ -1,4 +1,4 @@
-import { createContext, useState, useEffect, type ReactNode } from 'react';
+import { createContext, useState, useEffect, useCallback, type ReactNode } from 'react';
 
 interface UserSettings {
   emailNotifications?: boolean;
@@ -68,6 +68,105 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   };
 
+  // Función para refrescar usuario (definida temprano para poder usarla en useEffects)
+  const refreshUser = useCallback(async () => {
+    try {
+      console.log('🔄 Actualizando estado del usuario desde servidor...');
+      const response = await authenticatedFetch(`${API_BASE}/user`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Usuario actualizado:', {
+          email: data.user.email,
+          twoFactorEnabled: data.user.twoFactorEnabled,
+          role: data.user.role
+        });
+        
+        // Verificar si hay cambios importantes en el estado de 2FA
+        if (user && user.twoFactorEnabled !== data.user.twoFactorEnabled) {
+          console.log('🔄 Estado de 2FA cambió:', {
+            anterior: user.twoFactorEnabled,
+            nuevo: data.user.twoFactorEnabled
+          });
+        }
+        
+        setUser(data.user);
+        localStorage.setItem('user', JSON.stringify(data.user));
+      } else {
+        console.error('❌ Error al actualizar usuario: token inválido');
+        // Token inválido, limpiar datos
+        signOut();
+      }
+    } catch (error) {
+      console.error('❌ Error al refrescar usuario:', error);
+      // No hacer signOut automático en caso de error de red
+      // para no desloguear al usuario innecesariamente
+    }
+  }, [user]);
+
+  // Función signOut (necesaria para refreshUser)
+  const signOut = () => {
+    // Limpiar todos los tokens y datos
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('user');
+    localStorage.removeItem('tempToken');
+    localStorage.removeItem('tempUser');
+    
+    // Limpiar todos los estados
+    setUser(null);
+    setIsAuthenticated(false);
+    setRequiresTwoFactor(false);
+    setRequiresSetup2FA(false);
+    setTempUser(null);
+    
+    console.log('🔓 Sesión cerrada - todos los estados limpiados');
+  };
+
+  // Inicializar autenticación
+  useEffect(() => {
+    const initAuth = async () => {
+      // ...existing initAuth code...
+    };
+
+    initAuth();
+  }, []);
+
+  // Sincronización periódica cuando la pestaña está activa
+  useEffect(() => {
+    if (!isAuthenticated || !user) return;
+
+    let syncInterval: NodeJS.Timeout;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && isAuthenticated) {
+        console.log('🔄 Pestaña activa, sincronizando estado...');
+        refreshUser();
+      }
+    };
+
+    // Agregar listener para cambios de visibilidad
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    // Sincronización periódica cada 5 minutos si la pestaña está activa
+    const startPeriodicSync = () => {
+      syncInterval = setInterval(() => {
+        if (document.visibilityState === 'visible' && isAuthenticated) {
+          console.log('🔄 Sincronización periódica...');
+          refreshUser();
+        }
+      }, 5 * 60 * 1000); // 5 minutos
+    };
+
+    startPeriodicSync();
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      if (syncInterval) {
+        clearInterval(syncInterval);
+      }
+    };
+  }, [isAuthenticated, user, refreshUser]);
+
   // Inicializar autenticación
   useEffect(() => {
     const initAuth = async () => {
@@ -127,28 +226,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // AuthToken found, verifying authentication...
         
         try {
-          // Primero usar datos guardados si existen
-          if (savedUser) {
-            try {
-              const parsedUser = JSON.parse(savedUser);
-            // User found in localStorage...
-              setUser(parsedUser);
-              setIsAuthenticated(true);
-              setRequiresTwoFactor(false);
-              setRequiresSetup2FA(false);
-              setTempUser(null);
-            } catch (error) {
-              console.error('❌ Error parsing saved user:', error);
-            }
-          }
-          
-          // Verificar token con el servidor en segundo plano
-          // Verifying token with server...
+          // Siempre verificar con el servidor para obtener el estado más actualizado
+          console.log('🔄 Verificando estado con el servidor...');
           const response = await authenticatedFetch(`${API_BASE}/user`);
           
           if (response.ok) {
             const data = await response.json();
-            // User verified with server
+            console.log('✅ Estado sincronizado desde servidor:', {
+              twoFactorEnabled: data.user.twoFactorEnabled,
+              email: data.user.email
+            });
+            
+            // Usar datos del servidor como fuente de verdad
             setUser(data.user);
             setIsAuthenticated(true);
             setRequiresTwoFactor(false);
@@ -158,6 +247,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             // Actualizar localStorage con datos frescos del servidor
             localStorage.setItem('user', JSON.stringify(data.user));
           } else {
+            console.log('❌ Token inválido, limpiando datos...');
             // Token invalid, cleaning data...
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
@@ -171,16 +261,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           }
         } catch (error) {
           console.error('❌ Error al verificar autenticación:', error);
-          // En caso de error de red, mantener el usuario si existe en localStorage
+          
+          // En caso de error de red, usar datos en caché SOLO temporalmente
           if (savedUser) {
             try {
               const parsedUser = JSON.parse(savedUser);
-              // Network error, using cached user...
+              console.log('⚠️ Error de red, usando datos en caché temporalmente');
               setUser(parsedUser);
               setIsAuthenticated(true);
               setRequiresTwoFactor(false);
               setRequiresSetup2FA(false);
               setTempUser(null);
+              
+              // Intentar sincronizar en segundo plano después de un delay
+              setTimeout(async () => {
+                try {
+                  console.log('🔄 Reintentando sincronización en segundo plano...');
+                  const retryResponse = await authenticatedFetch(`${API_BASE}/user`);
+                  if (retryResponse.ok) {
+                    const retryData = await retryResponse.json();
+                    console.log('✅ Sincronización en segundo plano exitosa');
+                    setUser(retryData.user);
+                    localStorage.setItem('user', JSON.stringify(retryData.user));
+                  }
+                } catch (retryError) {
+                  console.error('❌ Error en reintento de sincronización:', retryError);
+                }
+              }, 5000); // Reintentar después de 5 segundos
+              
             } catch (parseError) {
               console.error('❌ Error parsing saved user on error:', parseError);
               localStorage.removeItem('authToken');
@@ -356,23 +464,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const signOut = () => {
-    // Limpiar todos los tokens y datos
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('user');
-    localStorage.removeItem('tempToken');
-    localStorage.removeItem('tempUser');
-    
-    // Limpiar todos los estados
-    setUser(null);
-    setIsAuthenticated(false);
-    setRequiresTwoFactor(false);
-    setRequiresSetup2FA(false);  // Asegurar que se limpia también este estado
-    setTempUser(null);
-    
-    // Sign out - all states cleared
-  };
-
   const updateUserProfile = async (profileData: Partial<User>) => {
     try {
       const response = await authenticatedFetch(`${API_BASE}/user`, {
@@ -414,20 +505,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error al eliminar cuenta';
       throw new Error(message);
-    }
-  };
-
-  const refreshUser = async () => {
-    try {
-      const response = await authenticatedFetch(`${API_BASE}/user`);
-      
-      if (response.ok) {
-        const data = await response.json();
-        setUser(data.user);
-        localStorage.setItem('user', JSON.stringify(data.user));
-      }
-    } catch (error) {
-      console.error('Error al refrescar usuario:', error);
     }
   };
 
