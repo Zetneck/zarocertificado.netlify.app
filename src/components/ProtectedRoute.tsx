@@ -20,7 +20,18 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     isAuthenticated, 
     requiresTwoFactor, 
     hasUser: !!user,
+    userEmail: user?.email,
     loading 
+  });
+
+  // DEBUGGING: Log detallado cuando cambia el estado
+  console.log('🔍 ProtectedRoute - Valores detallados:', {
+    'isAuthenticated': isAuthenticated,
+    'user': user,
+    'requiresTwoFactor': requiresTwoFactor,
+    'loading': loading,
+    'condition (!isAuthenticated || !user)': (!isAuthenticated || !user),
+    'condition requiresTwoFactor': requiresTwoFactor
   });
 
   const theme = mode === 'light' ? lightTheme : darkTheme;
