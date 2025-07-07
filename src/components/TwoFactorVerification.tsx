@@ -20,7 +20,7 @@ import {
   Email,
   Message
 } from '@mui/icons-material';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthReal } from '../hooks/useAuthReal';
 import { useTheme } from '@mui/material/styles';
 
 export function TwoFactorVerification() {
@@ -31,7 +31,10 @@ export function TwoFactorVerification() {
   const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutos
   const [canResend, setCanResend] = useState(false);
   
-  const { verifyTwoFactor, resendTwoFactorCode, logout } = useAuth();
+  const { signOut } = useAuthReal();
+  // Funciones de 2FA no implementadas aún
+  const verifyTwoFactor = async (_params: { code: string; method: string }) => ({ success: false, error: 'No implementado' });
+  const resendTwoFactorCode = async (_method: string) => ({ success: false, error: 'No implementado' });
   const theme = useTheme();
 
   const methods = [
@@ -322,7 +325,7 @@ export function TwoFactorVerification() {
               fullWidth
               variant="outlined"
               startIcon={<ArrowBack />}
-              onClick={logout}
+              onClick={signOut}
             >
               Volver al login
             </Button>

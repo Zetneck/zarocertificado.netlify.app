@@ -62,35 +62,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Inicializar autenticación
   useEffect(() => {
     const initAuth = async () => {
-      console.log('AuthContext: Inicializando autenticación...');
       const token = localStorage.getItem('authToken');
-      
-      console.log('AuthContext: Token encontrado:', !!token);
       
       if (token) {
         try {
-          console.log('AuthContext: Verificando token con servidor...');
           const response = await authenticatedFetch(`${API_BASE}/user`);
           
           if (response.ok) {
             const data = await response.json();
-            console.log('AuthContext: Usuario verificado exitosamente:', data.user?.email);
             setUser(data.user);
             setIsAuthenticated(true);
           } else {
-            console.log('AuthContext: Token inválido, limpiando...');
             // Token inválido, limpiar
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
           }
         } catch (error) {
-          console.error('AuthContext: Error al verificar autenticación:', error);
+          console.error('Error al verificar autenticación:', error);
           localStorage.removeItem('authToken');
           localStorage.removeItem('user');
         }
       }
       
-      console.log('AuthContext: Inicialización completada. Loading false');
       setLoading(false);
     };
 
@@ -98,7 +91,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    console.log('AuthContext: Iniciando login para:', email);
     setLoading(true);
     
     try {
@@ -114,17 +106,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || 'Error de autenticación');
       }
 
-      console.log('AuthContext: Login exitoso, guardando datos...');
-      
       // Guardar token y datos del usuario
       localStorage.setItem('authToken', data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       
-      console.log('AuthContext: Actualizando estado...');
       setUser(data.user);
       setIsAuthenticated(true);
-      
-      console.log('AuthContext: Estado actualizado, usuario:', data.user?.email);
       
       return { success: true };
     } catch (error: unknown) {

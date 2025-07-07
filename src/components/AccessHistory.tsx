@@ -24,7 +24,7 @@ import {
   Error,
   Schedule
 } from '@mui/icons-material';
-import { useAuth } from '../hooks/useAuth';
+import { useAuthReal } from '../hooks/useAuthReal';
 import type { LoginAttempt } from '../types/auth';
 
 interface AccessHistoryProps {
@@ -33,7 +33,9 @@ interface AccessHistoryProps {
 }
 
 export function AccessHistory({ open, onClose }: AccessHistoryProps) {
-  const { getLoginHistory } = useAuth();
+  useAuthReal(); // Para asegurar autenticación
+  // Función de historial no implementada aún
+  const getLoginHistory = async () => [];
   const [attempts, setAttempts] = useState<LoginAttempt[]>([]);
   const [loading, setLoading] = useState(false);
 

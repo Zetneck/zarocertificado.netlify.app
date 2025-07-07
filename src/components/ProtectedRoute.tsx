@@ -17,14 +17,6 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
   const theme = mode === 'light' ? lightTheme : darkTheme;
 
-  // Debug logs para entender el estado
-  console.log('ProtectedRoute Debug:', {
-    loading,
-    isAuthenticated,
-    user: user ? { id: user.id, email: user.email, role: user.role } : null,
-    hasUser: !!user
-  });
-
   // Mostrar loading mientras se inicializa
   if (loading) {
     return (
