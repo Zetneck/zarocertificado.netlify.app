@@ -31,6 +31,7 @@ interface AuthContextType {
   deleteAccount: () => Promise<void>;
   refreshUser: () => Promise<void>;
   trackCertificate: (folio: string, placas: string) => Promise<void>;
+  toggleTwoFactor: () => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -207,6 +208,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // Función para habilitar/deshabilitar 2FA
+  const toggleTwoFactor = async (): Promise<{ success: boolean; message: string }> => {
+    try {
+      if (!user) {
+        throw new Error('Usuario no autenticado');
+      }
+
+      const response = await authenticatedFetch(`${API_BASE}/toggle-2fa`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          enable: !user.twoFactorEnabled
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al cambiar configuración 2FA');
+      }
+
+      // Actualizar el estado del usuario
+      setUser(prev => prev ? { ...prev, twoFactorEnabled: !prev.twoFactorEnabled } : null);
+      
+      return {
+        success: true,
+        message: user.twoFactorEnabled 
+          ? 'Autenticación de dos factores deshabilitada' 
+          : 'Autenticación de dos factores habilitada'
+      };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error al cambiar configuración 2FA';
+      return {
+        success: false,
+        message
+      };
+    }
+  };
+
   const value = {
     user,
     isAuthenticated,
@@ -218,6 +259,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     deleteAccount,
     refreshUser,
     trackCertificate,
+    toggleTwoFactor,
   };
 
   return (
