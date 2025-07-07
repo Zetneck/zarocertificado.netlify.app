@@ -105,9 +105,18 @@ export const handler: Handler = async (event) => {
       { expiresIn: '24h' }
     );
 
-    // Preparar datos del usuario (sin campos sensibles)
+    // Preparar datos del usuario (sin campos sensibles y con camelCase)
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password_hash, two_factor_secret, ...userData } = user;
+    const { password_hash, two_factor_secret, two_factor_enabled, created_at, last_login, updated_at, ...baseUserData } = user;
+    
+    // Convertir a camelCase para el frontend
+    const userData = {
+      ...baseUserData,
+      twoFactorEnabled: two_factor_enabled || false,
+      createdAt: created_at,
+      lastLogin: last_login,
+      updatedAt: updated_at
+    };
 
     return {
       statusCode: 200,
