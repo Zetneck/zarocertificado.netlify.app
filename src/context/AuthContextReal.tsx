@@ -73,8 +73,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const initAuth = async () => {
       const token = localStorage.getItem('authToken');
       const tempToken = localStorage.getItem('tempToken');
+      const savedUser = localStorage.getItem('user');
       
-      console.log('🔍 initAuth - tokens:', { authToken: !!token, tempToken: !!tempToken });
+      console.log('🔍 initAuth - tokens:', { 
+        authToken: !!token, 
+        tempToken: !!tempToken,
+        savedUser: !!savedUser 
+      });
       
       // Si hay un tempToken, significa que estamos en proceso de 2FA
       if (tempToken && !token) {
@@ -99,29 +104,84 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Si hay authToken, verificar autenticación normal
       if (token) {
         try {
+          // Primero intentar usar el usuario guardado
+          if (savedUser) {
+            try {
+              const parsedUser = JSON.parse(savedUser);
+              console.log('🔍 Usuario encontrado en localStorage:', parsedUser.email);
+              setUser(parsedUser);
+              setIsAuthenticated(true);
+              setRequiresTwoFactor(false);
+              setTempUser(null);
+            } catch (error) {
+              console.error('Error parsing saved user:', error);
+            }
+          }
+          
+          // Verificar token con el servidor
+          console.log('🔍 Verificando token con servidor...');
           const response = await authenticatedFetch(`${API_BASE}/user`);
           
           if (response.ok) {
             const data = await response.json();
+            console.log('🔍 Usuario verificado con servidor:', data.user.email);
             setUser(data.user);
             setIsAuthenticated(true);
             setRequiresTwoFactor(false);
             setTempUser(null);
-            console.log('🔍 Usuario autenticado desde localStorage');
+            
+            // Actualizar localStorage con datos frescos del servidor
+            localStorage.setItem('user', JSON.stringify(data.user));
+            console.log('✅ Usuario actualizado en localStorage');
           } else {
+            console.log('❌ Token inválido, limpiando datos...');
             // Token inválido, limpiar
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             localStorage.removeItem('tempToken');
             localStorage.removeItem('tempUser');
+            setUser(null);
+            setIsAuthenticated(false);
+            setRequiresTwoFactor(false);
+            setTempUser(null);
           }
         } catch (error) {
-          console.error('Error al verificar autenticación:', error);
-          localStorage.removeItem('authToken');
-          localStorage.removeItem('user');
-          localStorage.removeItem('tempToken');
-          localStorage.removeItem('tempUser');
+          console.error('❌ Error al verificar autenticación:', error);
+          // En caso de error de red, mantener el usuario si existe en localStorage
+          if (savedUser) {
+            try {
+              const parsedUser = JSON.parse(savedUser);
+              console.log('⚠️ Error de red, usando usuario guardado:', parsedUser.email);
+              setUser(parsedUser);
+              setIsAuthenticated(true);
+              setRequiresTwoFactor(false);
+              setTempUser(null);
+            } catch (parseError) {
+              console.error('Error parsing saved user on error:', parseError);
+              // Si no se puede parsear, limpiar todo
+              localStorage.removeItem('authToken');
+              localStorage.removeItem('user');
+              localStorage.removeItem('tempToken');
+              localStorage.removeItem('tempUser');
+              setUser(null);
+              setIsAuthenticated(false);
+            }
+          } else {
+            // No hay usuario guardado, limpiar todo
+            localStorage.removeItem('authToken');
+            localStorage.removeItem('user');
+            localStorage.removeItem('tempToken');
+            localStorage.removeItem('tempUser');
+            setUser(null);
+            setIsAuthenticated(false);
+          }
         }
+      } else {
+        console.log('🔍 No hay authToken, usuario no autenticado');
+        setUser(null);
+        setIsAuthenticated(false);
+        setRequiresTwoFactor(false);
+        setTempUser(null);
       }
       
       setLoading(false);
@@ -129,6 +189,53 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     initAuth();
   }, []);
+
+  // Listener para cambios en localStorage (útil para múltiples pestañas)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'authToken') {
+        if (e.newValue === null) {
+          // Token eliminado, cerrar sesión
+          console.log('🔍 Token eliminado en otra pestaña - cerrando sesión');
+          signOut();
+        } else if (e.newValue && !isAuthenticated) {
+          // Token añadido, recargar autenticación
+          console.log('🔍 Token añadido en otra pestaña - recargando autenticación');
+          window.location.reload();
+        }
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, [isAuthenticated]);
+
+  // Verificación periódica del token (cada 5 minutos)
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const verifyTokenPeriodically = async () => {
+      const token = localStorage.getItem('authToken');
+      if (!token) return;
+
+      try {
+        const response = await authenticatedFetch(`${API_BASE}/user`);
+        if (!response.ok) {
+          console.log('🔍 Token expirado, cerrando sesión');
+          signOut();
+        }
+      } catch (error) {
+        console.log('🔍 Error verificando token:', error);
+        // No cerrar sesión por errores de red
+      }
+    };
+
+    // Verificar inmediatamente y luego cada 5 minutos
+    verifyTokenPeriodically();
+    const interval = setInterval(verifyTokenPeriodically, 5 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
 
   const signIn = async (email: string, password: string) => {
     setLoading(true);
