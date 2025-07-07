@@ -39,14 +39,24 @@ export function TwoFactorVerification() {
       return;
     }
 
-    const result = await verifyTwoFactor(code);
-    
-    if (!result.success) {
-      setError(result.message || 'Código incorrecto');
+    try {
+      console.log('🔍 Verificando código 2FA desde componente...');
+      const result = await verifyTwoFactor(code);
+      
+      if (result.success) {
+        console.log('✅ Verificación exitosa desde componente');
+        // La autenticación se maneja automáticamente en el contexto
+        // No necesitamos hacer nada más, el ProtectedRoute detectará el cambio
+      } else {
+        console.log('❌ Error en verificación:', result.message);
+        setError(result.message || 'Código incorrecto');
+      }
+    } catch (error) {
+      console.error('❌ Error inesperado en verificación:', error);
+      setError('Error de conexión. Inténtalo de nuevo.');
+    } finally {
+      setIsVerifying(false);
     }
-    // Si es exitoso, el contexto maneja la autenticación automáticamente
-    
-    setIsVerifying(false);
   };
 
   const handleCodeChange = (value: string) => {

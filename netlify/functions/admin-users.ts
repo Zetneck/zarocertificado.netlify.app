@@ -12,7 +12,7 @@ const headers = {
 
 const verifyAdmin = (token: string): { id: string; email: string; role: string } | null => {
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key-change-this') as { id: string; email: string; role: string };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'tu-jwt-secret-muy-seguro') as { id: string; email: string; role: string };
     return decoded.role === 'admin' ? decoded : null;
   } catch {
     return null;

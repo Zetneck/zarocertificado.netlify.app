@@ -43,9 +43,15 @@ export function LoginForm() {
     }
 
     try {
-      await signIn(email, password);
-      // Si es exitoso, el usuario será redirigido automáticamente
+      const result = await signIn(email, password);
+      
+      // El ProtectedRoute manejará automáticamente la redirección
+      // basándose en los estados del contexto de autenticación
+      if (result?.success) {
+        // Login successful
+      }
     } catch (error) {
+      console.error('❌ Error en login:', error);
       setError(error instanceof Error ? error.message : 'Error al iniciar sesión');
     }
   };

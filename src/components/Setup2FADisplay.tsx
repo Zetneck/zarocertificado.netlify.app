@@ -71,16 +71,12 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
       const authToken = localStorage.getItem('authToken');
       const tempToken = localStorage.getItem('tempToken');
       
-      console.log('=== DEBUG FRONTEND ===');
-      console.log('authToken exists:', !!authToken);
-      console.log('tempToken exists:', !!tempToken);
-      console.log('authToken preview:', authToken?.substring(0, 30) + '...');
-      console.log('tempToken preview:', tempToken?.substring(0, 30) + '...');
+      // Token validation...
       
       let response;
       
       if (authToken) {
-        console.log('Trying with authToken...');
+        // Using authToken...
         // Usuario existente con token de autenticación
         response = await fetch('/.netlify/functions/debug-qr-token', {
           method: 'GET',
@@ -90,7 +86,7 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
           },
         });
       } else if (tempToken) {
-        console.log('Trying with tempToken...');
+        // Using tempToken...
         // Usuario nuevo con token temporal
         response = await fetch('/.netlify/functions/debug-qr-token', {
           method: 'POST',
@@ -104,15 +100,13 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
       }
 
       const data = await response.json();
-      console.log('Debug response:', data);
-
+      
       if (!response.ok) {
         throw new Error(data.message || data.error || 'Error en debug');
       }
 
       // Si el debug es exitoso, intentar con la función real
       if (data.success) {
-        console.log('Debug successful, trying real QR generation...');
         
         let realResponse;
         if (authToken) {
@@ -135,7 +129,6 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
 
         if (realResponse) {
           const realData = await realResponse.json();
-          console.log('Real QR response:', realData);
           
           if (realResponse.ok) {
             setQrData(realData);
@@ -169,10 +162,8 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
     }
 
     setVerifying(true);
-    setVerificationError(null);
-
+    setVerificationError(null);    
     try {
-      console.log('🔍 Completando setup 2FA con código:', verificationCode);
       
       const tempToken = localStorage.getItem('tempToken');
       if (!tempToken) {
@@ -196,7 +187,7 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
         
         // Si el token expiró, regenerar el QR
         if (data.error?.includes('Token temporal') || data.error?.includes('inválido') || data.error?.includes('expirado')) {
-          console.log('🔄 Token expirado, regenerando QR...');
+          // Token expired, regenerating...
           setActiveStep(0);
           setVerificationCode('');
           setError('Tu sesión expiró. Regenerando código QR...');
@@ -208,36 +199,30 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
       }
 
       if (data.success) {
-        console.log('✅ Setup 2FA completado exitosamente');
-        console.log('📦 Datos recibidos:', { token: !!data.token, user: !!data.user });
+        // Setup completed successfully
         setActiveStep(3);
         
         // Actualizar localStorage con token final
         if (data.token) {
           localStorage.setItem('authToken', data.token);
-          console.log('✅ AuthToken guardado');
         }
         if (data.user) {
           localStorage.setItem('user', JSON.stringify(data.user));
-          console.log('✅ Usuario guardado');
         }
         
         // Limpiar tokens temporales
         localStorage.removeItem('tempToken');
         localStorage.removeItem('tempUser');
-        console.log('🧹 Tokens temporales eliminados');
         
         // Actualizar el contexto de autenticación
         try {
           await refreshUser();
-          console.log('✅ Estado de autenticación actualizado');
         } catch (error) {
           console.error('⚠️ Error al actualizar estado:', error);
         }
         
         // Completar setup después de un breve delay para mostrar el éxito
         setTimeout(() => {
-          console.log('🎯 Llamando onComplete...');
           onComplete();
         }, 1500);
       }

@@ -71,71 +71,94 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Inicializar autenticación
   useEffect(() => {
     const initAuth = async () => {
+      // Initializing authentication...
+      
       const token = localStorage.getItem('authToken');
       const tempToken = localStorage.getItem('tempToken');
       const savedUser = localStorage.getItem('user');
+      const tempUserData = localStorage.getItem('tempUser');
       
-      console.log('🔍 initAuth - tokens:', { 
-        authToken: !!token, 
-        tempToken: !!tempToken,
-        savedUser: !!savedUser 
-      });
+      // Getting stored tokens and data...
       
-      // Si hay un tempToken, significa que estamos en proceso de 2FA
+      // CASO 1: Hay tempToken (proceso 2FA en curso)
       if (tempToken && !token) {
-        console.log('🔍 Proceso 2FA en curso - no autenticar aún');
-        const tempUserData = localStorage.getItem('tempUser');
+        // Restoring 2FA process state...
+        
         if (tempUserData) {
           try {
             const parsedTempUser = JSON.parse(tempUserData);
             setTempUser(parsedTempUser);
-            setRequiresTwoFactor(true);
+            
+            // Determinar si es setup o verificación basándose en si el usuario tiene 2FA configurado
+            if (!parsedTempUser.twoFactorEnabled) {
+              // User requires 2FA setup...
+              setRequiresSetup2FA(true);
+              setRequiresTwoFactor(false);
+            } else {
+              // User requires 2FA verification...
+              setRequiresTwoFactor(true);
+              setRequiresSetup2FA(false);
+            }
+            
             setIsAuthenticated(false);
+            setUser(null);
           } catch (error) {
-            console.error('Error parsing temp user:', error);
+            console.error('❌ Error parsing temp user:', error);
             localStorage.removeItem('tempToken');
             localStorage.removeItem('tempUser');
+            setTempUser(null);
+            setRequiresTwoFactor(false);
+            setRequiresSetup2FA(false);
           }
+        } else {
+          // Orphaned tempToken, cleaning...
+          localStorage.removeItem('tempToken');
+          setTempUser(null);
+          setRequiresTwoFactor(false);
+          setRequiresSetup2FA(false);
         }
+        
         setLoading(false);
         return;
       }
       
-      // Si hay authToken, verificar autenticación normal
+      // CASO 2: Hay authToken (usuario ya autenticado)
       if (token) {
+        // AuthToken found, verifying authentication...
+        
         try {
-          // Primero intentar usar el usuario guardado
+          // Primero usar datos guardados si existen
           if (savedUser) {
             try {
               const parsedUser = JSON.parse(savedUser);
-              console.log('🔍 Usuario encontrado en localStorage:', parsedUser.email);
+            // User found in localStorage...
               setUser(parsedUser);
               setIsAuthenticated(true);
               setRequiresTwoFactor(false);
+              setRequiresSetup2FA(false);
               setTempUser(null);
             } catch (error) {
-              console.error('Error parsing saved user:', error);
+              console.error('❌ Error parsing saved user:', error);
             }
           }
           
-          // Verificar token con el servidor
-          console.log('🔍 Verificando token con servidor...');
+          // Verificar token con el servidor en segundo plano
+          // Verifying token with server...
           const response = await authenticatedFetch(`${API_BASE}/user`);
           
           if (response.ok) {
             const data = await response.json();
-            console.log('🔍 Usuario verificado con servidor:', data.user.email);
+            // User verified with server
             setUser(data.user);
             setIsAuthenticated(true);
             setRequiresTwoFactor(false);
+            setRequiresSetup2FA(false);
             setTempUser(null);
             
             // Actualizar localStorage con datos frescos del servidor
             localStorage.setItem('user', JSON.stringify(data.user));
-            console.log('✅ Usuario actualizado en localStorage');
           } else {
-            console.log('❌ Token inválido, limpiando datos...');
-            // Token inválido, limpiar
+            // Token invalid, cleaning data...
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             localStorage.removeItem('tempToken');
@@ -143,6 +166,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(null);
             setIsAuthenticated(false);
             setRequiresTwoFactor(false);
+            setRequiresSetup2FA(false);
             setTempUser(null);
           }
         } catch (error) {
@@ -151,36 +175,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           if (savedUser) {
             try {
               const parsedUser = JSON.parse(savedUser);
-              console.log('⚠️ Error de red, usando usuario guardado:', parsedUser.email);
+              // Network error, using cached user...
               setUser(parsedUser);
               setIsAuthenticated(true);
               setRequiresTwoFactor(false);
+              setRequiresSetup2FA(false);
               setTempUser(null);
             } catch (parseError) {
-              console.error('Error parsing saved user on error:', parseError);
-              // Si no se puede parsear, limpiar todo
+              console.error('❌ Error parsing saved user on error:', parseError);
               localStorage.removeItem('authToken');
               localStorage.removeItem('user');
               localStorage.removeItem('tempToken');
               localStorage.removeItem('tempUser');
               setUser(null);
               setIsAuthenticated(false);
+              setRequiresTwoFactor(false);
+              setRequiresSetup2FA(false);
+              setTempUser(null);
             }
           } else {
-            // No hay usuario guardado, limpiar todo
             localStorage.removeItem('authToken');
             localStorage.removeItem('user');
             localStorage.removeItem('tempToken');
             localStorage.removeItem('tempUser');
             setUser(null);
             setIsAuthenticated(false);
+            setRequiresTwoFactor(false);
+            setRequiresSetup2FA(false);
+            setTempUser(null);
           }
         }
       } else {
-        console.log('🔍 No hay authToken, usuario no autenticado');
+        // CASO 3: No hay tokens (usuario no autenticado)
+        // No authToken, user not authenticated
         setUser(null);
         setIsAuthenticated(false);
         setRequiresTwoFactor(false);
+        setRequiresSetup2FA(false);
         setTempUser(null);
       }
       
@@ -196,11 +227,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (e.key === 'authToken') {
         if (e.newValue === null) {
           // Token eliminado, cerrar sesión
-          console.log('🔍 Token eliminado en otra pestaña - cerrando sesión');
+          // Token removed in another tab, logging out...
           signOut();
         } else if (e.newValue && !isAuthenticated) {
           // Token añadido, recargar autenticación
-          console.log('🔍 Token añadido en otra pestaña - recargando autenticación');
+          // Token added in another tab, reloading authentication...
           window.location.reload();
         }
       }
@@ -221,11 +252,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const response = await authenticatedFetch(`${API_BASE}/user`);
         if (!response.ok) {
-          console.log('🔍 Token expirado, cerrando sesión');
+          // Token expired, logging out
           signOut();
         }
       } catch (error) {
-        console.log('🔍 Error verificando token:', error);
+        console.error('Error verifying token:', error);
         // No cerrar sesión por errores de red
       }
     };
@@ -241,26 +272,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     
     try {
-      console.log('🔍 Iniciando login con debug para:', email);
-      
-      const response = await fetch(`${API_BASE}/debug-login`, {
+      const response = await fetch(`${API_BASE}/auth-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
-      console.log('🔍 Respuesta del debug-login:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Error de autenticación');
       }
 
-      console.log('🔍 Datos recibidos del login:', data);
-
       // CASO 1: Usuario nuevo que necesita configurar 2FA
       if (data.requiresSetup2FA) {
-        console.log('🆕 Usuario nuevo - requiere configuración 2FA');
+        // User requires 2FA setup
         
         // Limpiar autenticación previa
         localStorage.removeItem('authToken');
@@ -281,7 +307,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // CASO 2: Usuario existente que requiere verificación 2FA
       if (data.requiresTwoFactor) {
-        console.log('🔐 Usuario existente - requiere verificación 2FA');
+        // User requires 2FA verification
         
         // Limpiar cualquier autenticación previa
         localStorage.removeItem('authToken');
@@ -302,8 +328,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return { success: true, requiresTwoFactor: true };
       }
 
-      // CASO 3: Login de emergencia o caso especial (no debería ocurrir normalmente)
-      console.log('⚠️ Login directo - revisar configuración 2FA');
+      // CASO 3: Login directo (no debería ocurrir con 2FA obligatorio)
+      // Warning: Direct login - review 2FA configuration
       
       // Limpiar cualquier proceso previo
       localStorage.removeItem('tempToken');
@@ -323,6 +349,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error de conexión';
+      console.error('❌ Error en signIn:', message);
       throw new Error(message);
     } finally {
       setLoading(false);
@@ -340,9 +367,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     setIsAuthenticated(false);
     setRequiresTwoFactor(false);
+    setRequiresSetup2FA(false);  // Asegurar que se limpia también este estado
     setTempUser(null);
     
-    console.log('🔍 SignOut - todos los estados limpiados');
+    // Sign out - all states cleared
   };
 
   const updateUserProfile = async (profileData: Partial<User>) => {
@@ -492,6 +520,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       if (data.success) {
+        console.log('✅ 2FA verificado exitosamente');
+        
         // Limpiar datos temporales
         localStorage.removeItem('tempToken');
         localStorage.removeItem('tempUser');
@@ -500,13 +530,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));
         
-        // Actualizar estados
+        // Actualizar estados - limpiar TODOS los estados de 2FA
         setUser(data.user);
         setIsAuthenticated(true);
         setRequiresTwoFactor(false);
+        setRequiresSetup2FA(false);  // Asegurar que se limpia también este estado
         setTempUser(null);
         
-        console.log('✅ 2FA verificado - usuario autenticado');
+        console.log('✅ Estados actualizados:', {
+          isAuthenticated: true,
+          requiresTwoFactor: false,
+          requiresSetup2FA: false,
+          user: data.user.email
+        });
+        
         return { success: true, message: data.message || 'Verificación exitosa' };
       } else {
         console.log('❌ Código 2FA incorrecto');

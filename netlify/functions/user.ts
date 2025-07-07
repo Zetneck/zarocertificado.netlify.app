@@ -9,9 +9,22 @@ const headers = {
   'Content-Type': 'application/json'
 };
 
-const verifyToken = (token: string): { id: string; email: string; role: string } | null => {
+const verifyToken = (token: string): { userId: string; id: string; email: string; role: string } | null => {
   try {
-    return jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key-change-this') as { id: string; email: string; role: string };
+    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'tu-jwt-secret-muy-seguro') as { userId?: string; id?: string; email: string; role: string };
+    // Asegurar compatibilidad entre id y userId
+    const resolvedId = decoded.id || decoded.userId;
+    const resolvedUserId = decoded.userId || decoded.id;
+    
+    if (!resolvedId || !resolvedUserId) {
+      return null;
+    }
+    
+    return {
+      ...decoded,
+      id: resolvedId,
+      userId: resolvedUserId
+    };
   } catch {
     return null;
   }
@@ -24,6 +37,7 @@ export const handler: Handler = async (event) => {
 
   // Verificar autenticación
   const authHeader = event.headers.authorization;
+  
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return {
       statusCode: 401,
@@ -63,6 +77,7 @@ export const handler: Handler = async (event) => {
       );
 
       if (result.rows.length === 0) {
+        console.log('❌ Usuario no encontrado en base de datos para ID:', decoded.id);
         return {
           statusCode: 404,
           headers,
