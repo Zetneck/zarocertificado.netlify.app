@@ -68,17 +68,19 @@ export function Mandatory2FASetup() {
           p: 2
         }}
       >
-        <Container maxWidth="md">
+        <Container maxWidth="sm">
           <Paper sx={{ 
-            p: 4, 
-            borderRadius: 3,
+            p: 3, 
+            borderRadius: 2,
             backgroundColor: theme.palette.mode === 'dark' 
               ? 'rgba(30, 41, 59, 0.95)' 
               : 'rgba(248, 250, 252, 0.95)',
             backdropFilter: 'blur(20px)',
             boxShadow: theme.palette.mode === 'dark'
-              ? '0 25px 50px rgba(0, 0, 0, 0.5)'
-              : '0 25px 50px rgba(99, 102, 241, 0.1)'
+              ? '0 20px 40px rgba(0, 0, 0, 0.4)'
+              : '0 20px 40px rgba(99, 102, 241, 0.08)',
+            maxHeight: '85vh',
+            overflow: 'auto'
           }}>
             <Setup2FADisplay 
               onComplete={handleSetupComplete}

@@ -250,13 +250,13 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
   };
 
   return (
-    <Box>
-      <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+    <Box sx={{ maxHeight: '80vh', overflow: 'auto' }}>
+      <Typography variant="h6" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
         <Security color="primary" />
         Configurar Autenticación en 2 Pasos
       </Typography>
 
-      <Stepper activeStep={activeStep} sx={{ mb: 3 }}>
+      <Stepper activeStep={activeStep} sx={{ mb: 2 }}>
         {steps.map((label) => (
           <Step key={label}>
             <StepLabel>{label}</StepLabel>
@@ -265,16 +265,16 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
       </Stepper>
 
       {loading && (
-        <Box display="flex" justifyContent="center" alignItems="center" p={3}>
-          <CircularProgress sx={{ mr: 2 }} />
-          <Typography>Generando código QR...</Typography>
+        <Box display="flex" justifyContent="center" alignItems="center" py={2}>
+          <CircularProgress size={20} sx={{ mr: 1 }} />
+          <Typography variant="body2">Generando código QR...</Typography>
         </Box>
       )}
 
       {error && (
-        <Alert severity="error" sx={{ mb: 2 }}>
+        <Alert severity="error" sx={{ mb: 1 }}>
           {error}
-          <Button onClick={generateQR} size="small" sx={{ mt: 1 }}>
+          <Button onClick={generateQR} size="small" sx={{ mt: 0.5 }}>
             Intentar de nuevo
           </Button>
         </Alert>
@@ -283,74 +283,54 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
       {/* Paso 1: Mostrar QR y configuración */}
       {qrData && activeStep === 1 && (
         <Box>
-          <Alert severity="info" sx={{ mb: 2 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+          <Alert severity="info" sx={{ mb: 1.5, py: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
               📱 Configura tu aplicación autenticadora
             </Typography>
-            <Typography variant="body2">
-              Usa Google Authenticator, Microsoft Authenticator o cualquier app compatible con TOTP.
+            <Typography variant="caption">
+              Usa Google Authenticator, Microsoft Authenticator o cualquier app TOTP.
             </Typography>
           </Alert>
 
-          <Paper elevation={3} sx={{ p: 2, textAlign: 'center', mb: 2, border: '2px solid', borderColor: 'primary.main' }}>
-            <Typography variant="subtitle1" sx={{ mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-              <QrCode2 color="primary" />
+          <Paper elevation={2} sx={{ p: 1.5, textAlign: 'center', mb: 1.5 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+              <QrCode2 color="primary" fontSize="small" />
               Escanea este código QR
             </Typography>
             
-            <Box sx={{ display: 'inline-block', p: 1, backgroundColor: 'white', borderRadius: 2 }}>
+            <Box sx={{ display: 'inline-block', p: 0.5, backgroundColor: 'white', borderRadius: 1 }}>
               <Box
                 component="img"
                 src={qrData.qrCode} 
                 alt="Código QR 2FA"
                 sx={{
-                  maxWidth: '180px',
+                  maxWidth: '140px',
                   height: 'auto',
                   display: 'block'
                 }}
               />
             </Box>
 
-            <Alert severity="info" sx={{ mt: 1, textAlign: 'left' }}>
-              <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                📱 Busca en tu app:
-              </Typography>
-              <Typography variant="body2">
-                Después de escanear, aparecerá <strong>"Zaro Certificado"</strong> en tu Google Authenticator con un código de 6 dígitos.
-              </Typography>
-            </Alert>
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: 'block' }}>
+              Aparecerá como <strong>"Zaro Certificado"</strong> en tu app
+            </Typography>
           </Paper>
 
-          {/* Botón principal más arriba */}
-          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', mb: 3 }}>
-            <Button onClick={onCancel} variant="outlined" size="large">
+          {/* Botón principal más compacto */}
+          <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', mb: 2 }}>
+            <Button onClick={onCancel} variant="outlined" size="medium">
               Cancelar
             </Button>
             <Button 
               onClick={() => setActiveStep(2)} 
               variant="contained"
-              size="large"
+              size="medium"
               startIcon={<ArrowForward />}
               sx={{ 
-                minWidth: 220,
-                py: 1.5,
-                fontSize: '1rem',
-                fontWeight: 600,
-                animation: 'pulse 2s infinite',
-                '@keyframes pulse': {
-                  '0%': {
-                    transform: 'scale(1)',
-                    boxShadow: '0 0 0 0 rgba(25, 118, 210, 0.7)'
-                  },
-                  '70%': {
-                    transform: 'scale(1.02)',
-                    boxShadow: '0 0 0 10px rgba(25, 118, 210, 0)'
-                  },
-                  '100%': {
-                    transform: 'scale(1)',
-                    boxShadow: '0 0 0 0 rgba(25, 118, 210, 0)'
-                  }
-                }
+                minWidth: 180,
+                py: 1,
+                fontSize: '0.9rem',
+                fontWeight: 600
               }}
             >
               Ya escaneé el código
@@ -358,37 +338,37 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
           </Box>
 
           {/* Sección colapsible para configuración manual */}
-          <Divider sx={{ my: 2 }}>
-            <Typography variant="body2" color="text.secondary">
+          <Divider sx={{ my: 1 }}>
+            <Typography variant="caption" color="text.secondary">
               Configuración manual (opcional)
             </Typography>
           </Divider>
 
-          <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-            <Typography variant="subtitle2" gutterBottom>
+          <Paper variant="outlined" sx={{ p: 1.5, mb: 1 }}>
+            <Typography variant="caption" color="text.secondary" gutterBottom>
               Clave secreta:
             </Typography>
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
               <Typography 
-                variant="body2" 
+                variant="caption" 
                 sx={{ 
                   flexGrow: 1, 
                   fontFamily: 'monospace', 
                   backgroundColor: 'action.hover',
-                  p: 1,
-                  borderRadius: 1,
+                  p: 0.5,
+                  borderRadius: 0.5,
                   wordBreak: 'break-all',
-                  fontSize: '0.8rem'
+                  fontSize: '0.7rem'
                 }}
               >
                 {qrData.secret}
               </Typography>
               <IconButton onClick={copySecret} size="small" color="primary">
-                {copied ? <CheckCircle color="success" /> : <ContentCopy />}
+                {copied ? <CheckCircle color="success" fontSize="small" /> : <ContentCopy fontSize="small" />}
               </IconButton>
             </Box>
             <Typography variant="caption" color="text.secondary">
-              Servicio: {qrData.serviceName} | Cuenta: {qrData.accountName}
+              {qrData.serviceName} | {qrData.accountName}
             </Typography>
           </Paper>
         </Box>
@@ -397,18 +377,18 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
       {/* Paso 2: Verificar código */}
       {qrData && activeStep === 2 && (
         <Box>
-          <Alert severity="info" sx={{ mb: 3 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+          <Alert severity="info" sx={{ mb: 2, py: 1 }}>
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
               🔐 Verifica tu configuración
             </Typography>
-            <Typography variant="body2">
-              Ingresa el código de 6 dígitos que aparece en tu aplicación autenticadora para completar la configuración.
+            <Typography variant="caption">
+              Ingresa el código de 6 dígitos de tu aplicación autenticadora.
             </Typography>
           </Alert>
 
-          <Paper variant="outlined" sx={{ p: 3, mb: 3 }}>
-            <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Security color="primary" />
+          <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
+            <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Security color="primary" fontSize="small" />
               Código de verificación
             </Typography>
             
@@ -424,13 +404,14 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
               placeholder="123456"
               inputProps={{ maxLength: 6 }}
               disabled={verifying}
-              sx={{ mb: 2 }}
+              sx={{ mb: 1.5 }}
               error={!!verificationError}
-              helperText={verificationError || 'Ingresa el código que aparece en tu app autenticadora'}
+              helperText={verificationError || 'Código de tu app autenticadora'}
+              size="small"
             />
 
             {verificationError && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert severity="error" sx={{ mb: 1.5 }}>
                 {verificationError}
                 {verificationError.includes('Token') && (
                   <Button
@@ -441,7 +422,7 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
                       setError(null);
                       generateQR();
                     }}
-                    sx={{ mt: 1, display: 'block' }}
+                    sx={{ mt: 0.5, display: 'block' }}
                   >
                     Regenerar código QR
                   </Button>
@@ -449,11 +430,12 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
               </Alert>
             )}
 
-            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
+            <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'flex-end' }}>
               <Button 
                 onClick={() => setActiveStep(1)} 
                 variant="outlined"
                 disabled={verifying}
+                size="small"
               >
                 Volver
               </Button>
@@ -461,7 +443,8 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
                 onClick={handleVerifyCode} 
                 variant="contained"
                 disabled={verifying || verificationCode.length !== 6}
-                startIcon={verifying ? <CircularProgress size={20} /> : <CheckCircle />}
+                startIcon={verifying ? <CircularProgress size={16} /> : <CheckCircle />}
+                size="small"
               >
                 {verifying ? 'Verificando...' : 'Activar 2FA'}
               </Button>
@@ -473,12 +456,12 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
       {/* Paso 3: Completado */}
       {activeStep === 3 && (
         <Box textAlign="center">
-          <Alert severity="success" sx={{ mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              🎉 ¡2FA Activado Exitosamente!
+          <Alert severity="success" sx={{ mb: 2, py: 1 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              🎉 ¡2FA Activado!
             </Typography>
             <Typography variant="body2">
-              Tu cuenta ahora está protegida con autenticación de dos factores. Podrás acceder a la aplicación.
+              Tu cuenta está protegida. Accediendo a la aplicación...
             </Typography>
           </Alert>
         </Box>
