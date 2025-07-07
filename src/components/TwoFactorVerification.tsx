@@ -8,7 +8,8 @@ import {
   Typography,
   Alert,
   CircularProgress,
-  Chip
+  Chip,
+  useMediaQuery
 } from '@mui/material';
 import {
   Security,
@@ -27,6 +28,7 @@ export function TwoFactorVerification() {
   const { signOut, verifyTwoFactor } = useAuthReal();
   
   const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,7 +136,7 @@ export function TwoFactorVerification() {
             sx={{
               height: { xs: 40, sm: 50, md: 60 },
               width: 'auto',
-              maxWidth: { xs: '200px', sm: '250px' },
+              maxWidth: { xs: '250px', sm: '300px' },
               objectFit: 'contain',
               filter: theme.palette.mode === 'dark' 
                 ? 'brightness(1.1) drop-shadow(0 0 20px rgba(129, 140, 248, 0.4)) invert(0) contrast(1.1) saturate(1.2)' 
@@ -213,7 +215,7 @@ export function TwoFactorVerification() {
             <Button
               variant="contained"
               startIcon={<Smartphone sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />}
-              size={window.innerWidth < 600 ? "medium" : "large"}
+              size={isMobile ? "medium" : "large"}
               sx={{ 
                 px: { xs: 2, sm: 4 },
                 py: { xs: 1, sm: 1.5 },
@@ -269,12 +271,12 @@ export function TwoFactorVerification() {
               value={code}
               onChange={(e) => handleCodeChange(e.target.value)}
               placeholder="000000"
-              size={window.innerWidth < 600 ? "small" : "medium"}
+              size={isMobile ? "small" : "medium"}
               slotProps={{
                 input: {
                   style: { 
                     textAlign: 'center', 
-                    fontSize: window.innerWidth < 600 ? '1.2rem' : '1.5rem',
+                    fontSize: isMobile ? '1.2rem' : '1.5rem',
                     letterSpacing: '0.3rem'
                   },
                   inputMode: 'numeric'
@@ -327,7 +329,7 @@ export function TwoFactorVerification() {
               type="submit"
               fullWidth
               variant="contained"
-              size={window.innerWidth < 600 ? "medium" : "large"}
+              size={isMobile ? "medium" : "large"}
               disabled={isVerifying || code.length !== 6}
               startIcon={isVerifying ? <CircularProgress size={20} /> : <CheckCircle />}
               sx={{ 
@@ -344,7 +346,7 @@ export function TwoFactorVerification() {
               variant="outlined"
               startIcon={<ArrowBack sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />}
               onClick={signOut}
-              size={window.innerWidth < 600 ? "medium" : "large"}
+              size={isMobile ? "medium" : "large"}
               sx={{ 
                 py: { xs: 0.8, sm: 1 },
                 fontSize: { xs: '0.85rem', sm: '0.9rem' }
