@@ -16,7 +16,30 @@
 - **Autenticación**: Login funcionando correctamente ✅
 - **Interface**: Aplicación principal visible después del login ✅
 - **Navegación**: Todos los menús funcionan sin congelamiento ✅
+- **2FA**: Autenticación de dos factores completamente funcional ✅
 - **Deploy**: https://zarocertificado.netlify.app ✅
+
+### 🔐 NUEVA FUNCIONALIDAD: Autenticación de Dos Factores (2FA)
+
+#### Implementación Completa
+- **Backend**: Función serverless `toggle-2fa.ts` creada
+- **Frontend**: Componente `TwoFactorSettings.tsx` completamente refactorizado
+- **Context**: Función `toggleTwoFactor` añadida al contexto de autenticación
+- **Base de datos**: Columna `two_factor_enabled` ya existente en PostgreSQL
+
+#### Características
+✅ **Switch interactivo** para habilitar/deshabilitar 2FA  
+✅ **Estados de carga** con indicadores visuales  
+✅ **Mensajes de feedback** (éxito/error)  
+✅ **Persistencia** en base de datos real  
+✅ **Validación JWT** en backend  
+✅ **Manejo de errores** robusto  
+
+#### Funcionalidades del Usuario
+- Toggle inmediato de 2FA desde configuración de seguridad
+- Indicador visual del estado actual (habilitado/deshabilitado)
+- Feedback inmediato al usuario sobre cambios
+- Sincronización en tiempo real con la base de datos
 
 ### 🔧 ÚLTIMA CORRECCIÓN: Congelamiento en AccessHistory
 
