@@ -112,14 +112,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || 'Error de autenticación');
       }
 
+      console.log('🔍 Datos recibidos del login:', data);
+      console.log('🔍 Usuario twoFactorEnabled:', data.user.twoFactorEnabled);
+
       // Verificar si el usuario tiene 2FA habilitado
       if (data.user.twoFactorEnabled) {
+        console.log('✅ 2FA requerido - mostrando pantalla de verificación');
         // Guardar usuario temporalmente (sin autenticar completamente)
         setTempUser(data.user);
         setRequiresTwoFactor(true);
         localStorage.setItem('tempToken', data.token);
         return { success: true, requiresTwoFactor: true };
       } else {
+        console.log('❌ 2FA no requerido - login directo');
         // Login normal sin 2FA
         localStorage.setItem('authToken', data.token);
         localStorage.setItem('user', JSON.stringify(data.user));

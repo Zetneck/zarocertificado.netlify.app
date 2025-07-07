@@ -16,6 +16,13 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
   const [mode, setMode] = useState<'light' | 'dark'>('dark');
   const toggleMode = () => setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
 
+  console.log('🔍 ProtectedRoute state:', { 
+    isAuthenticated, 
+    requiresTwoFactor, 
+    hasUser: !!user,
+    loading 
+  });
+
   const theme = mode === 'light' ? lightTheme : darkTheme;
 
   // Mostrar loading mientras se inicializa
