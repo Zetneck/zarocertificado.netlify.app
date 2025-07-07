@@ -235,13 +235,30 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
   };
 
   return (
-    <Box sx={{ maxHeight: '80vh', overflow: 'auto' }}>
-      <Typography variant="h6" sx={{ mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-        <Security color="primary" />
+    <Box sx={{ maxHeight: { xs: '80vh', sm: '80vh' }, overflow: 'auto' }}>
+      <Typography 
+        variant="h6" 
+        sx={{ 
+          mb: { xs: 1, sm: 1 }, 
+          display: 'flex', 
+          alignItems: 'center', 
+          gap: 1,
+          fontSize: { xs: '1.1rem', sm: '1.25rem' }
+        }}
+      >
+        <Security color="primary" sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />
         Configurar Autenticación en 2 Pasos
       </Typography>
 
-      <Stepper activeStep={activeStep} sx={{ mb: 2 }}>
+      <Stepper 
+        activeStep={activeStep} 
+        sx={{ 
+          mb: { xs: 1.5, sm: 2 },
+          '& .MuiStepLabel-label': {
+            fontSize: { xs: '0.8rem', sm: '0.875rem' }
+          }
+        }}
+      >
         {steps.map((label) => (
           <Step key={label}>
             <StepLabel>{label}</StepLabel>
@@ -283,13 +300,18 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
               Escanea este código QR
             </Typography>
             
-            <Box sx={{ display: 'inline-block', p: 0.5, backgroundColor: 'white', borderRadius: 1 }}>
+            <Box sx={{ 
+              display: 'inline-block', 
+              p: 0.5, 
+              backgroundColor: 'white', 
+              borderRadius: 1 
+            }}>
               <Box
                 component="img"
                 src={qrData.qrCode} 
                 alt="Código QR 2FA"
                 sx={{
-                  maxWidth: '140px',
+                  maxWidth: { xs: '120px', sm: '140px' },
                   height: 'auto',
                   display: 'block'
                 }}
@@ -302,19 +324,34 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
           </Paper>
 
           {/* Botón principal más compacto */}
-          <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'center', mb: 2 }}>
-            <Button onClick={onCancel} variant="outlined" size="medium">
+          <Box sx={{ 
+            display: 'flex', 
+            gap: { xs: 1, sm: 1.5 }, 
+            justifyContent: 'center', 
+            mb: 2,
+            flexDirection: { xs: 'column', sm: 'row' }
+          }}>
+            <Button 
+              onClick={onCancel} 
+              variant="outlined" 
+              size={window.innerWidth < 600 ? "small" : "medium"}
+              sx={{ 
+                order: { xs: 2, sm: 1 },
+                fontSize: { xs: '0.8rem', sm: '0.9rem' }
+              }}
+            >
               Cancelar
             </Button>
             <Button 
               onClick={() => setActiveStep(2)} 
               variant="contained"
-              size="medium"
-              startIcon={<ArrowForward />}
+              size={window.innerWidth < 600 ? "small" : "medium"}
+              startIcon={<ArrowForward sx={{ fontSize: { xs: '1rem', sm: '1.2rem' } }} />}
               sx={{ 
-                minWidth: 180,
-                py: 1,
-                fontSize: '0.9rem',
+                order: { xs: 1, sm: 2 },
+                minWidth: { xs: 'auto', sm: 180 },
+                py: { xs: 0.8, sm: 1 },
+                fontSize: { xs: '0.8rem', sm: '0.9rem' },
                 fontWeight: 600
               }}
             >
@@ -362,18 +399,47 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
       {/* Paso 2: Verificar código */}
       {qrData && activeStep === 2 && (
         <Box>
-          <Alert severity="info" sx={{ mb: 2, py: 1 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+          <Alert 
+            severity="info" 
+            sx={{ 
+              mb: 2, 
+              py: 1,
+              fontSize: { xs: '0.8rem', sm: '0.875rem' }
+            }}
+          >
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontWeight: 600, 
+                mb: 0.5,
+                fontSize: { xs: '0.8rem', sm: '0.875rem' }
+              }}
+            >
               🔐 Verifica tu configuración
             </Typography>
-            <Typography variant="caption">
+            <Typography 
+              variant="caption"
+              sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+            >
               Ingresa el código de 6 dígitos de tu aplicación autenticadora.
             </Typography>
           </Alert>
 
-          <Paper variant="outlined" sx={{ p: 2, mb: 2 }}>
-            <Typography variant="subtitle2" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Security color="primary" fontSize="small" />
+          <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2 }, mb: 2 }}>
+            <Typography 
+              variant="subtitle2" 
+              gutterBottom 
+              sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: 1,
+                fontSize: { xs: '0.85rem', sm: '0.9rem' }
+              }}
+            >
+              <Security 
+                color="primary" 
+                sx={{ fontSize: { xs: '1rem', sm: '1.2rem' } }}
+              />
               Código de verificación
             </Typography>
             
@@ -389,14 +455,33 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
               placeholder="123456"
               inputProps={{ maxLength: 6 }}
               disabled={verifying}
-              sx={{ mb: 1.5 }}
+              sx={{ 
+                mb: 1.5,
+                '& .MuiInputBase-input': {
+                  textAlign: 'center',
+                  fontSize: { xs: '1.1rem', sm: '1.2rem' },
+                  letterSpacing: '0.2rem'
+                }
+              }}
               error={!!verificationError}
               helperText={verificationError || 'Código de tu app autenticadora'}
-              size="small"
+              size={window.innerWidth < 600 ? "small" : "medium"}
+              FormHelperTextProps={{
+                sx: { 
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  textAlign: 'center'
+                }
+              }}
             />
 
             {verificationError && (
-              <Alert severity="error" sx={{ mb: 1.5 }}>
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 1.5,
+                  fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                }}
+              >
                 {verificationError}
                 {verificationError.includes('Token') && (
                   <Button
@@ -407,7 +492,11 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
                       setError(null);
                       generateQR();
                     }}
-                    sx={{ mt: 0.5, display: 'block' }}
+                    sx={{ 
+                      mt: 0.5, 
+                      display: 'block',
+                      fontSize: { xs: '0.7rem', sm: '0.8rem' }
+                    }}
                   >
                     Regenerar código QR
                   </Button>
@@ -415,12 +504,18 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
               </Alert>
             )}
 
-            <Box sx={{ display: 'flex', gap: 1.5, justifyContent: 'flex-end' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              gap: { xs: 1, sm: 1.5 }, 
+              justifyContent: 'flex-end',
+              flexDirection: { xs: 'column-reverse', sm: 'row' }
+            }}>
               <Button 
                 onClick={() => setActiveStep(1)} 
                 variant="outlined"
                 disabled={verifying}
-                size="small"
+                size={window.innerWidth < 600 ? "small" : "medium"}
+                sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}
               >
                 Volver
               </Button>
@@ -429,7 +524,8 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
                 variant="contained"
                 disabled={verifying || verificationCode.length !== 6}
                 startIcon={verifying ? <CircularProgress size={16} /> : <CheckCircle />}
-                size="small"
+                size={window.innerWidth < 600 ? "small" : "medium"}
+                sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}
               >
                 {verifying ? 'Verificando...' : 'Activar 2FA'}
               </Button>
@@ -441,11 +537,25 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
       {/* Paso 3: Completado */}
       {activeStep === 3 && (
         <Box textAlign="center">
-          <Alert severity="success" sx={{ mb: 2, py: 1 }}>
-            <Typography variant="subtitle1" gutterBottom>
+          <Alert 
+            severity="success" 
+            sx={{ 
+              mb: 2, 
+              py: 1,
+              fontSize: { xs: '0.8rem', sm: '0.875rem' }
+            }}
+          >
+            <Typography 
+              variant="subtitle1" 
+              gutterBottom
+              sx={{ fontSize: { xs: '1rem', sm: '1.1rem' } }}
+            >
               🎉 ¡2FA Activado!
             </Typography>
-            <Typography variant="body2">
+            <Typography 
+              variant="body2"
+              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+            >
               Tu cuenta está protegida. Accediendo a la aplicación...
             </Typography>
           </Alert>

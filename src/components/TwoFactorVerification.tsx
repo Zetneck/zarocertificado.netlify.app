@@ -100,7 +100,7 @@ export function TwoFactorVerification() {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 2,
+        p: { xs: 1, sm: 2 },
         '&::before': {
           content: '""',
           position: 'absolute',
@@ -116,23 +116,31 @@ export function TwoFactorVerification() {
         }
       }}
     >
-      <Container maxWidth="sm" sx={{ position: 'relative', zIndex: 1 }}>
-        <Box sx={{ textAlign: 'center', mb: 3 }}>
+      <Container 
+        maxWidth="sm" 
+        sx={{ 
+          position: 'relative', 
+          zIndex: 1,
+          width: '100%',
+          maxWidth: { xs: '100%', sm: '400px', md: '450px' }
+        }}
+      >
+        <Box sx={{ textAlign: 'center', mb: { xs: 2, sm: 3 } }}>
           {/* Logo de Zaro */}
           <Box
             component="img"
             src="/Logo-Zaro.png"
             alt="Logo Zaro"
             sx={{
-              height: { xs: 50, sm: 60 },
+              height: { xs: 40, sm: 50, md: 60 },
               width: 'auto',
-              maxWidth: '250px',
+              maxWidth: { xs: '200px', sm: '250px' },
               objectFit: 'contain',
               filter: theme.palette.mode === 'dark' 
                 ? 'brightness(1.1) drop-shadow(0 0 20px rgba(129, 140, 248, 0.4)) invert(0) contrast(1.1) saturate(1.2)' 
                 : 'drop-shadow(0 2px 8px rgba(99, 102, 241, 0.2)) invert(1) contrast(1) saturate(1)',
               transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-              mb: 2
+              mb: { xs: 1, sm: 2 }
             }}
             onError={(e) => {
               const target = e.target as HTMLImageElement;
@@ -144,7 +152,7 @@ export function TwoFactorVerification() {
             variant="h4" 
             sx={{ 
               fontWeight: 700,
-              fontSize: { xs: '1.5rem', sm: '1.8rem' },
+              fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
               letterSpacing: '-0.02em',
               background: theme.palette.mode === 'dark'
                 ? 'linear-gradient(45deg, #818cf8, #22d3ee, #34d399)'
@@ -153,24 +161,36 @@ export function TwoFactorVerification() {
               WebkitTextFillColor: 'transparent',
               backgroundClip: 'text',
               textShadow: theme.palette.mode === 'dark' ? '0 0 30px rgba(129, 140, 248, 0.4)' : 'none',
-              mb: 1
+              mb: { xs: 0.5, sm: 1 }
             }}
           >
             Verificación en 2 pasos
           </Typography>
-          <Typography variant="body1" color="text.secondary" sx={{ mb: 1 }}>
+          <Typography 
+            variant="body1" 
+            color="text.secondary" 
+            sx={{ 
+              mb: { xs: 0.5, sm: 1 },
+              fontSize: { xs: '0.9rem', sm: '1rem' }
+            }}
+          >
             Ingresa el código de verificación
           </Typography>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-            <Security color="primary" />
-            <Typography variant="body2" color="primary.main" fontWeight={600}>
+            <Security color="primary" sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />
+            <Typography 
+              variant="body2" 
+              color="primary.main" 
+              fontWeight={600}
+              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+            >
               Paso 2 de 2
             </Typography>
           </Box>
         </Box>
 
         <Paper sx={{ 
-          p: { xs: 3, sm: 4 }, 
+          p: { xs: 2, sm: 3, md: 4 }, 
           borderRadius: 3,
           backgroundColor: theme.palette.mode === 'dark' 
             ? 'rgba(30, 41, 59, 0.95)' 
@@ -184,30 +204,60 @@ export function TwoFactorVerification() {
             : '1px solid rgba(99, 102, 241, 0.1)'
         }}>
           {/* Método de verificación */}
-          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            justifyContent: 'center', 
+            mb: { xs: 2, sm: 3 }
+          }}>
             <Button
               variant="contained"
-              startIcon={<Smartphone />}
-              size="large"
+              startIcon={<Smartphone sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />}
+              size={window.innerWidth < 600 ? "medium" : "large"}
               sx={{ 
-                px: 4,
-                py: 1.5,
+                px: { xs: 2, sm: 4 },
+                py: { xs: 1, sm: 1.5 },
                 borderRadius: 2,
-                textTransform: 'none'
+                textTransform: 'none',
+                fontSize: { xs: '0.9rem', sm: '1rem' }
               }}
             >
               Google Authenticator
             </Button>
           </Box>
 
-          <Alert severity="info" sx={{ mb: 3 }}>
-            <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+          <Alert 
+            severity="info" 
+            sx={{ 
+              mb: { xs: 2, sm: 3 },
+              fontSize: { xs: '0.8rem', sm: '0.875rem' }
+            }}
+          >
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                fontWeight: 600, 
+                mb: 1,
+                fontSize: { xs: '0.8rem', sm: '0.875rem' }
+              }}
+            >
               🔐 Usa tu aplicación autenticadora
             </Typography>
-            <Typography variant="body2">
+            <Typography 
+              variant="body2"
+              sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' } }}
+            >
               Abre Google Authenticator, Microsoft Authenticator u otra app TOTP e ingresa el código de 6 dígitos que aparece para esta cuenta.
             </Typography>
-            <Typography variant="caption" display="block" sx={{ mt: 1, fontStyle: 'italic' }}>
+            <Typography 
+              variant="caption" 
+              display="block" 
+              sx={{ 
+                mt: 1, 
+                fontStyle: 'italic',
+                fontSize: { xs: '0.7rem', sm: '0.75rem' }
+              }}
+            >
               El código cambia cada 30 segundos
             </Typography>
           </Alert>
@@ -219,12 +269,13 @@ export function TwoFactorVerification() {
               value={code}
               onChange={(e) => handleCodeChange(e.target.value)}
               placeholder="000000"
+              size={window.innerWidth < 600 ? "small" : "medium"}
               slotProps={{
                 input: {
                   style: { 
                     textAlign: 'center', 
-                    fontSize: '1.5rem',
-                    letterSpacing: '0.5rem'
+                    fontSize: window.innerWidth < 600 ? '1.2rem' : '1.5rem',
+                    letterSpacing: '0.3rem'
                   },
                   inputMode: 'numeric'
                 }
@@ -232,17 +283,42 @@ export function TwoFactorVerification() {
               margin="normal"
               autoFocus
               helperText="Ingresa el código de 6 dígitos de tu app autenticadora"
+              FormHelperTextProps={{
+                sx: { 
+                  fontSize: { xs: '0.7rem', sm: '0.75rem' },
+                  textAlign: 'center'
+                }
+              }}
             />
 
             {/* Información sobre TOTP */}
-            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2, mb: 3 }}>
-              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+            <Box sx={{ 
+              display: 'flex', 
+              justifyContent: 'center', 
+              alignItems: 'center', 
+              mt: 2, 
+              mb: { xs: 2, sm: 3 }
+            }}>
+              <Typography 
+                variant="body2" 
+                color="text.secondary" 
+                sx={{ 
+                  textAlign: 'center',
+                  fontSize: { xs: '0.75rem', sm: '0.8rem' }
+                }}
+              >
                 💡 Los códigos TOTP se regeneran automáticamente cada 30 segundos
               </Typography>
             </Box>
 
             {error && (
-              <Alert severity="error" sx={{ mb: 2 }}>
+              <Alert 
+                severity="error" 
+                sx={{ 
+                  mb: 2,
+                  fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                }}
+              >
                 {error}
               </Alert>
             )}
@@ -251,10 +327,14 @@ export function TwoFactorVerification() {
               type="submit"
               fullWidth
               variant="contained"
-              size="large"
+              size={window.innerWidth < 600 ? "medium" : "large"}
               disabled={isVerifying || code.length !== 6}
               startIcon={isVerifying ? <CircularProgress size={20} /> : <CheckCircle />}
-              sx={{ mb: 2 }}
+              sx={{ 
+                mb: 2,
+                py: { xs: 1, sm: 1.5 },
+                fontSize: { xs: '0.9rem', sm: '1rem' }
+              }}
             >
               {isVerifying ? 'Verificando...' : 'Verificar código'}
             </Button>
@@ -262,8 +342,13 @@ export function TwoFactorVerification() {
             <Button
               fullWidth
               variant="outlined"
-              startIcon={<ArrowBack />}
+              startIcon={<ArrowBack sx={{ fontSize: { xs: '1.2rem', sm: '1.5rem' } }} />}
               onClick={signOut}
+              size={window.innerWidth < 600 ? "medium" : "large"}
+              sx={{ 
+                py: { xs: 0.8, sm: 1 },
+                fontSize: { xs: '0.85rem', sm: '0.9rem' }
+              }}
             >
               Volver al login
             </Button>

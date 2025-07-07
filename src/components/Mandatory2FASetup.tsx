@@ -65,12 +65,18 @@ export function Mandatory2FASetup() {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          p: 2
+          p: { xs: 1, sm: 2 }
         }}
       >
-        <Container maxWidth="sm">
+        <Container 
+          maxWidth="sm"
+          sx={{
+            width: '100%',
+            maxWidth: { xs: '100%', sm: '500px' }
+          }}
+        >
           <Paper sx={{ 
-            p: 3, 
+            p: { xs: 2, sm: 3 }, 
             borderRadius: 2,
             backgroundColor: theme.palette.mode === 'dark' 
               ? 'rgba(30, 41, 59, 0.95)' 
@@ -79,7 +85,7 @@ export function Mandatory2FASetup() {
             boxShadow: theme.palette.mode === 'dark'
               ? '0 20px 40px rgba(0, 0, 0, 0.4)'
               : '0 20px 40px rgba(99, 102, 241, 0.08)',
-            maxHeight: '85vh',
+            maxHeight: { xs: '90vh', sm: '85vh' },
             overflow: 'auto'
           }}>
             <Setup2FADisplay 
