@@ -10,8 +10,7 @@ import {
   CircularProgress,
   InputAdornment,
   IconButton,
-  Link,
-  Divider
+  Link
 } from '@mui/material';
 import {
   Email,
@@ -25,8 +24,8 @@ import { useAuthReal } from '../hooks/useAuthReal';
 import { useTheme } from '@mui/material/styles';
 
 export function LoginForm() {
-  const [email, setEmail] = useState('admin@zaro.com');
-  const [password, setPassword] = useState('admin123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
@@ -55,11 +54,6 @@ export function LoginForm() {
       setError(error instanceof Error ? error.message : 'Error al iniciar sesión');
     }
   };
-
-  const demoAccounts = [
-    { email: 'admin@zaro.com', role: 'Administrador (con 2FA)', password: 'admin123' },
-    { email: 'usuario@fumigacion.mx', role: 'Usuario (sin 2FA)', password: 'demo123' }
-  ];
 
   return (
     <Box
@@ -274,55 +268,6 @@ export function LoginForm() {
               {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </Button>
           </form>
-
-          <Divider sx={{ my: { xs: 2, sm: 3 } }}>
-            <Typography 
-              variant="body2" 
-              color="text.secondary"
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-            >
-              Cuentas de demostración
-            </Typography>
-          </Divider>
-
-          <Box sx={{ 
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(51, 65, 85, 0.5)' : 'rgba(241, 245, 249, 0.8)', 
-            p: { xs: 1.5, sm: 2 }, 
-            borderRadius: 1 
-          }}>
-            <Typography 
-              variant="body2" 
-              fontWeight={600} 
-              gutterBottom
-              sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
-            >
-              Usuarios de prueba:
-            </Typography>
-            {demoAccounts.map((account, index) => (
-              <Box key={index} sx={{ mb: 1 }}>
-                <Typography 
-                  variant="body2"
-                  sx={{ fontSize: { xs: '0.75rem', sm: '0.8rem' } }}
-                >
-                  <strong>{account.email}</strong>
-                </Typography>
-                <Typography 
-                  variant="caption" 
-                  color="text.secondary"
-                  sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
-                >
-                  {account.role} • Contraseña: {account.password}
-                </Typography>
-              </Box>
-            ))}
-            <Typography 
-              variant="caption" 
-              color="warning.main"
-              sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
-            >
-              Código 2FA para admin: <strong>123456</strong>
-            </Typography>
-          </Box>
 
           <Box sx={{ textAlign: 'center', mt: { xs: 1.5, sm: 2 } }}>
             <Link 
