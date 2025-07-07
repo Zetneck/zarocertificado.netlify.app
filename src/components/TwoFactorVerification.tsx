@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Box,
   Container,
@@ -8,68 +8,25 @@ import {
   Typography,
   Alert,
   CircularProgress,
-  Chip,
-  Grid
+  Chip
 } from '@mui/material';
 import {
   Security,
-  Refresh,
   ArrowBack,
   CheckCircle,
-  Smartphone,
-  Email,
-  Message
+  Smartphone
 } from '@mui/icons-material';
 import { useAuthReal } from '../hooks/useAuthReal';
 import { useTheme } from '@mui/material/styles';
 
 export function TwoFactorVerification() {
   const [code, setCode] = useState('');
-  const [selectedMethod, setSelectedMethod] = useState('authenticator');
   const [error, setError] = useState<string | null>(null);
   const [isVerifying, setIsVerifying] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState(300); // 5 minutos
-  const [canResend, setCanResend] = useState(false);
   
   const { signOut, verifyTwoFactor } = useAuthReal();
   
   const theme = useTheme();
-
-  const methods = [
-    {
-      id: 'authenticator',
-      name: 'App Autenticadora',
-      icon: <Smartphone color="primary" />,
-      description: 'Ingresa el código de tu app'
-    },
-    {
-      id: 'sms',
-      name: 'SMS',
-      icon: <Message color="primary" />,
-      description: 'Código enviado por SMS'
-    },
-    {
-      id: 'email',
-      name: 'Email',
-      icon: <Email color="primary" />,
-      description: 'Código enviado por email'
-    }
-  ];
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeRemaining(prev => {
-        if (prev <= 0) {
-          clearInterval(timer);
-          setCanResend(true);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, []);
 
   const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,20 +47,6 @@ export function TwoFactorVerification() {
     // Si es exitoso, el contexto maneja la autenticación automáticamente
     
     setIsVerifying(false);
-  };
-
-  const handleResend = async () => {
-    // Simular reenvío de código
-    await new Promise(resolve => setTimeout(resolve, 500));
-    setTimeRemaining(300);
-    setCanResend(false);
-    setError(null);
-  };
-
-  const formatTime = (seconds: number) => {
-    const minutes = Math.floor(seconds / 60);
-    const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
   const handleCodeChange = (value: string) => {
@@ -230,48 +173,42 @@ export function TwoFactorVerification() {
             ? '1px solid rgba(129, 140, 248, 0.2)'
             : '1px solid rgba(99, 102, 241, 0.1)'
         }}>
-          {/* Selección de método */}
-          <Typography variant="subtitle2" sx={{ mb: 1 }}>
-            Método de verificación:
-          </Typography>
-          <Grid container spacing={1} sx={{ mb: 3 }}>
-            {methods.map((method) => (
-              <Grid key={method.id} size={{ xs: 4 }}>
-                <Button
-                  fullWidth
-                  variant={selectedMethod === method.id ? 'contained' : 'outlined'}
-                  onClick={() => setSelectedMethod(method.id)}
-                  startIcon={method.icon}
-                  size="small"
-                  sx={{ 
-                    flexDirection: 'column', 
-                    gap: 0.5,
-                    py: 1.5,
-                    fontSize: '0.75rem'
-                  }}
-                >
-                  {method.name}
-                </Button>
-              </Grid>
-            ))}
-          </Grid>
+          {/* Método de verificación */}
+          <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', mb: 3 }}>
+            <Button
+              variant="contained"
+              startIcon={<Smartphone />}
+              size="large"
+              sx={{ 
+                px: 4,
+                py: 1.5,
+                borderRadius: 2,
+                textTransform: 'none'
+              }}
+            >
+              Google Authenticator
+            </Button>
+          </Box>
 
           <Alert severity="info" sx={{ mb: 3 }}>
-            <Typography variant="body2">
-              {methods.find(m => m.id === selectedMethod)?.description}
+            <Typography variant="body2" sx={{ fontWeight: 600, mb: 1 }}>
+              🔐 Usa tu aplicación autenticadora
             </Typography>
-            <Typography variant="caption" display="block" sx={{ mt: 0.5 }}>
-              Código de demo: <strong>123456</strong>
+            <Typography variant="body2">
+              Abre Google Authenticator, Microsoft Authenticator u otra app TOTP e ingresa el código de 6 dígitos que aparece para esta cuenta.
+            </Typography>
+            <Typography variant="caption" display="block" sx={{ mt: 1, fontStyle: 'italic' }}>
+              El código cambia cada 30 segundos
             </Typography>
           </Alert>
 
           <form onSubmit={handleVerify}>
             <TextField
               fullWidth
-              label="Código de verificación"
+              label="Código TOTP"
               value={code}
               onChange={(e) => handleCodeChange(e.target.value)}
-              placeholder="123456"
+              placeholder="000000"
               slotProps={{
                 input: {
                   style: { 
@@ -284,21 +221,14 @@ export function TwoFactorVerification() {
               }}
               margin="normal"
               autoFocus
+              helperText="Ingresa el código de 6 dígitos de tu app autenticadora"
             />
 
-            {/* Contador de tiempo */}
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, mb: 3 }}>
-              <Typography variant="body2" color="text.secondary">
-                Tiempo restante: {formatTime(timeRemaining)}
+            {/* Información sobre TOTP */}
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', mt: 2, mb: 3 }}>
+              <Typography variant="body2" color="text.secondary" sx={{ textAlign: 'center' }}>
+                💡 Los códigos TOTP se regeneran automáticamente cada 30 segundos
               </Typography>
-              <Button
-                size="small"
-                startIcon={<Refresh />}
-                onClick={handleResend}
-                disabled={!canResend}
-              >
-                Reenviar
-              </Button>
             </Box>
 
             {error && (

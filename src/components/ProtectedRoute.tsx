@@ -3,6 +3,7 @@ import { Box, CircularProgress, Typography, ThemeProvider } from '@mui/material'
 import { useAuthReal } from '../hooks/useAuthReal';
 import { LoginForm } from './LoginForm';
 import { TwoFactorVerification } from './TwoFactorVerification';
+import { Mandatory2FASetup } from './Mandatory2FASetup';
 import { ThemeToggleFloating } from './ThemeToggleFloating';
 import { lightTheme, darkTheme } from '../themes/theme';
 
@@ -12,7 +13,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) {
-  const { user, isAuthenticated, loading, requiresTwoFactor } = useAuthReal();
+  const { user, isAuthenticated, loading, requiresTwoFactor, requiresSetup2FA } = useAuthReal();
   const [mode, setMode] = useState<'light' | 'dark'>('dark');
   const toggleMode = () => setMode((prev) => (prev === 'light' ? 'dark' : 'light'));
 
@@ -47,7 +48,16 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
   // Si no está autenticado, mostrar login
   if (!isAuthenticated || !user) {
-    // Si requiere 2FA, mostrar el componente de verificación
+    // Si requiere configuración de 2FA (usuario nuevo)
+    if (requiresSetup2FA) {
+      return (
+        <ThemeProvider theme={theme}>
+          <Mandatory2FASetup />
+        </ThemeProvider>
+      );
+    }
+    
+    // Si requiere verificación 2FA (usuario existente)
     if (requiresTwoFactor) {
       return (
         <ThemeProvider theme={theme}>

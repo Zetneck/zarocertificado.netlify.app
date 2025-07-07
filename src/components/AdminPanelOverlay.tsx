@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Typography,
@@ -22,13 +22,18 @@ import {
   Chip,
   IconButton,
   Alert,
-  CircularProgress
+  CircularProgress,
+  Menu,
+  ListItemIcon,
+  ListItemText
 } from '@mui/material';
 import {
   Add as AddIcon,
   Delete as DeleteIcon,
+  DeleteForever as DeleteForeverIcon,
   Refresh as RefreshIcon,
-  ArrowBack as ArrowBackIcon
+  ArrowBack as ArrowBackIcon,
+  MoreVert as MoreVertIcon
 } from '@mui/icons-material';
 import { useAuthReal } from '../hooks/useAuthReal';
 
@@ -67,6 +72,7 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
+  const [menuAnchor, setMenuAnchor] = useState<{ element: HTMLElement; userId: string } | null>(null);
   const [newUser, setNewUser] = useState<NewUser>({
     email: '',
     name: '',
@@ -89,7 +95,7 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
     });
   };
 
-  const loadUsers = async () => {
+  const loadUsers = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
@@ -106,7 +112,7 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   const createUser = async () => {
     if (!newUser.name || !newUser.email || !newUser.password) {
@@ -146,15 +152,23 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
     }
   };
 
-  const deleteUser = async (userId: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este usuario?')) {
+  const deleteUser = async (userId: string, permanent: boolean = false) => {
+    const confirmMessage = permanent 
+      ? '¿Estás seguro de que quieres ELIMINAR PERMANENTEMENTE este usuario? Esta acción NO se puede deshacer y eliminará todos sus datos.'
+      : '¿Estás seguro de que quieres eliminar este usuario? (Eliminación suave - se puede recuperar)';
+      
+    if (!confirm(confirmMessage)) {
       return;
     }
 
     setLoading(true);
     setError('');
     try {
-      const response = await authenticatedFetch(`/.netlify/functions/admin-users?id=${userId}`, {
+      const url = permanent 
+        ? `/.netlify/functions/admin-users?id=${userId}&permanent=true`
+        : `/.netlify/functions/admin-users?id=${userId}`;
+        
+      const response = await authenticatedFetch(url, {
         method: 'DELETE',
       });
 
@@ -162,7 +176,10 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
         throw new Error('Error al eliminar usuario');
       }
 
-      setSuccess('Usuario eliminado exitosamente');
+      const message = permanent 
+        ? 'Usuario eliminado permanentemente'
+        : 'Usuario eliminado exitosamente (eliminación suave)';
+      setSuccess(message);
       await loadUsers();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
@@ -197,7 +214,7 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
     if (user && user.role === 'admin') {
       loadUsers();
     }
-  }, [user]);
+  }, [user, loadUsers]);
 
   useEffect(() => {
     if (success || error) {
@@ -275,6 +292,14 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
         >
           Crear Usuario
         </Button>
+        <Button
+          variant="outlined"
+          color="warning"
+          onClick={() => window.open('/.netlify/functions/cleanup-deleted-users', '_blank')}
+          size="small"
+        >
+          Gestionar Eliminados
+        </Button>
       </Box>
 
       {/* Contenido */}
@@ -338,11 +363,11 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
                   <TableCell>{userItem.certificates_count}</TableCell>
                   <TableCell>
                     <IconButton
-                      onClick={() => deleteUser(userItem.id)}
+                      onClick={(e) => setMenuAnchor({ element: e.currentTarget, userId: userItem.id })}
                       size="small"
                       color="error"
                     >
-                      <DeleteIcon />
+                      <MoreVertIcon />
                     </IconButton>
                   </TableCell>
                 </TableRow>
@@ -351,6 +376,41 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
           </Table>
         </TableContainer>
       </Box>
+
+      {/* Menú de opciones de eliminación */}
+      <Menu
+        anchorEl={menuAnchor?.element}
+        open={Boolean(menuAnchor)}
+        onClose={() => setMenuAnchor(null)}
+      >
+        <MenuItem 
+          onClick={() => {
+            if (menuAnchor) {
+              deleteUser(menuAnchor.userId, false);
+              setMenuAnchor(null);
+            }
+          }}
+        >
+          <ListItemIcon>
+            <DeleteIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Eliminar (suave)</ListItemText>
+        </MenuItem>
+        <MenuItem 
+          onClick={() => {
+            if (menuAnchor) {
+              deleteUser(menuAnchor.userId, true);
+              setMenuAnchor(null);
+            }
+          }}
+          sx={{ color: 'error.main' }}
+        >
+          <ListItemIcon>
+            <DeleteForeverIcon fontSize="small" color="error" />
+          </ListItemIcon>
+          <ListItemText>Eliminar permanentemente</ListItemText>
+        </MenuItem>
+      </Menu>
 
       {/* Dialog para crear usuario */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>

@@ -25,8 +25,9 @@ interface AuthContextType {
   isAuthenticated: boolean;
   loading: boolean;
   requiresTwoFactor: boolean;
+  requiresSetup2FA: boolean;
   tempUser: User | null;
-  signIn: (email: string, password: string) => Promise<{ success: boolean; requiresTwoFactor?: boolean }>;
+  signIn: (email: string, password: string) => Promise<{ success: boolean; requiresTwoFactor?: boolean; requiresSetup2FA?: boolean }>;
   verifyTwoFactor: (code: string) => Promise<{ success: boolean; message?: string }>;
   signOut: () => void;
   updateUserProfile: (profileData: Partial<User>) => Promise<void>;
@@ -35,6 +36,7 @@ interface AuthContextType {
   refreshUser: () => Promise<void>;
   trackCertificate: (folio: string, placas: string) => Promise<void>;
   toggleTwoFactor: () => Promise<{ success: boolean; message: string }>;
+  completeSetup2FA: () => Promise<{ success: boolean; message: string }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [loading, setLoading] = useState(true);
   const [requiresTwoFactor, setRequiresTwoFactor] = useState(false);
+  const [requiresSetup2FA, setRequiresSetup2FA] = useState(false);
   const [tempUser, setTempUser] = useState<User | null>(null);
 
   // API base URL
@@ -131,55 +134,86 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     
     try {
-      const response = await fetch(`${API_BASE}/auth-login`, {
+      console.log('🔍 Iniciando login con debug para:', email);
+      
+      const response = await fetch(`${API_BASE}/debug-login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();
+      console.log('🔍 Respuesta del debug-login:', data);
 
       if (!response.ok) {
         throw new Error(data.error || 'Error de autenticación');
       }
 
       console.log('🔍 Datos recibidos del login:', data);
-      console.log('🔍 Usuario twoFactorEnabled:', data.user.twoFactorEnabled);
 
-      // Verificar si el usuario tiene 2FA habilitado
-      if (data.user.twoFactorEnabled) {
+      // CASO 1: Usuario nuevo que necesita configurar 2FA
+      if (data.requiresSetup2FA) {
+        console.log('🆕 Usuario nuevo - requiere configuración 2FA');
+        
+        // Limpiar autenticación previa
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        
+        // Guardar datos temporales para setup
+        setTempUser(data.user);
+        setRequiresSetup2FA(true);
+        setRequiresTwoFactor(false);
+        setIsAuthenticated(false);
+        setUser(null);
+        
+        localStorage.setItem('tempToken', data.tempToken);
+        localStorage.setItem('tempUser', JSON.stringify(data.user));
+        
+        return { success: true, requiresSetup2FA: true };
+      }
+
+      // CASO 2: Usuario existente que requiere verificación 2FA
+      if (data.requiresTwoFactor) {
+        console.log('🔐 Usuario existente - requiere verificación 2FA');
+        
         // Limpiar cualquier autenticación previa
         localStorage.removeItem('authToken');
         localStorage.removeItem('user');
         
         // Guardar datos temporales para el proceso 2FA
-        setTempUser(data.user);
+        setTempUser(data.user || { email }); // En caso de que no venga user completo
         setRequiresTwoFactor(true);
+        setRequiresSetup2FA(false);
         setIsAuthenticated(false);
         setUser(null);
         
-        localStorage.setItem('tempToken', data.token);
-        localStorage.setItem('tempUser', JSON.stringify(data.user));
+        localStorage.setItem('tempToken', data.tempToken);
+        if (data.user) {
+          localStorage.setItem('tempUser', JSON.stringify(data.user));
+        }
         
         return { success: true, requiresTwoFactor: true };
-      } else {
-        console.log('❌ 2FA no requerido - login directo');
-        
-        // Limpiar cualquier proceso 2FA previo
-        localStorage.removeItem('tempToken');
-        localStorage.removeItem('tempUser');
-        
-        // Login normal sin 2FA
-        localStorage.setItem('authToken', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        setUser(data.user);
-        setIsAuthenticated(true);
-        setRequiresTwoFactor(false);
-        setTempUser(null);
-        
-        return { success: true, requiresTwoFactor: false };
       }
+
+      // CASO 3: Login de emergencia o caso especial (no debería ocurrir normalmente)
+      console.log('⚠️ Login directo - revisar configuración 2FA');
+      
+      // Limpiar cualquier proceso previo
+      localStorage.removeItem('tempToken');
+      localStorage.removeItem('tempUser');
+      
+      // Login directo
+      localStorage.setItem('authToken', data.token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      
+      setUser(data.user);
+      setIsAuthenticated(true);
+      setRequiresTwoFactor(false);
+      setRequiresSetup2FA(false);
+      setTempUser(null);
+      
+      return { success: true, requiresTwoFactor: false };
+
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error de conexión';
       throw new Error(message);
@@ -327,36 +361,129 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       console.log('🔍 Verificando código 2FA:', code);
       
-      // Verificar código demo (123456)
-      if (code === '123456' && tempUser) {
-        // Mover usuario temporal a usuario autenticado
-        const tempToken = localStorage.getItem('tempToken');
-        if (tempToken) {
-          // Mover token temporal a token de autenticación
-          localStorage.setItem('authToken', tempToken);
-          localStorage.setItem('user', JSON.stringify(tempUser));
-          
-          // Limpiar datos temporales
-          localStorage.removeItem('tempToken');
-          localStorage.removeItem('tempUser');
-          
-          // Actualizar estados
-          setUser(tempUser);
-          setIsAuthenticated(true);
-          setRequiresTwoFactor(false);
-          setTempUser(null);
-          
-          console.log('✅ 2FA verificado - usuario autenticado');
-          return { success: true, message: 'Verificación exitosa' };
-        }
+      const tempToken = localStorage.getItem('tempToken');
+      if (!tempToken) {
+        console.log('❌ No hay token temporal');
+        return { success: false, message: 'Sesión expirada. Vuelve a iniciar sesión.' };
+      }
+
+      // Llamar a la función serverless para verificar el código
+      const response = await fetch(`${API_BASE}/verify-2fa`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          code: code.trim(), 
+          tempToken 
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.log('❌ Error en verificación 2FA:', data.error);
+        return { success: false, message: data.message || data.error || 'Error en verificación' };
+      }
+
+      if (data.success) {
+        // Limpiar datos temporales
+        localStorage.removeItem('tempToken');
+        localStorage.removeItem('tempUser');
+        
+        // Establecer autenticación final
+        localStorage.setItem('authToken', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        // Actualizar estados
+        setUser(data.user);
+        setIsAuthenticated(true);
+        setRequiresTwoFactor(false);
+        setTempUser(null);
+        
+        console.log('✅ 2FA verificado - usuario autenticado');
+        return { success: true, message: data.message || 'Verificación exitosa' };
+      } else {
+        console.log('❌ Código 2FA incorrecto');
+        return { success: false, message: data.message || 'Código incorrecto' };
       }
       
-      console.log('❌ Código 2FA incorrecto');
-      return { success: false, message: 'Código incorrecto. Usa: 123456' };
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error en verificación 2FA';
       console.error('❌ Error en verificación 2FA:', message);
-      return { success: false, message };
+      return { success: false, message: 'Error de conexión. Inténtalo de nuevo.' };
+    }
+  };
+
+  // Función para completar el setup de 2FA para usuarios nuevos
+  const completeSetup2FA = async (): Promise<{ success: boolean; message: string }> => {
+    try {
+      if (!tempUser) {
+        throw new Error('No hay sesión temporal de setup');
+      }
+
+      const tempToken = localStorage.getItem('tempToken');
+      if (!tempToken) {
+        throw new Error('Token temporal expirado');
+      }
+
+      // Habilitar 2FA para el usuario
+      const response = await fetch(`${API_BASE}/toggle-2fa`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${tempToken}`
+        },
+        body: JSON.stringify({
+          enable: true
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Error al activar 2FA');
+      }
+
+      // Generar token de autenticación final para el usuario
+      const loginResponse = await fetch(`${API_BASE}/auth-login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: tempUser.email, 
+          password: 'SETUP_COMPLETE' // Flag especial para completar setup
+        }),
+      });
+
+      if (loginResponse.ok) {
+        const loginData = await loginResponse.json();
+        
+        // Limpiar datos temporales
+        localStorage.removeItem('tempToken');
+        localStorage.removeItem('tempUser');
+        
+        // Establecer autenticación completa
+        localStorage.setItem('authToken', loginData.token);
+        localStorage.setItem('user', JSON.stringify(loginData.user));
+        
+        setUser({ ...tempUser, twoFactorEnabled: true });
+        setIsAuthenticated(true);
+        setRequiresSetup2FA(false);
+        setRequiresTwoFactor(false);
+        setTempUser(null);
+      } else {
+        // Si falla el login final, al menos activamos 2FA
+        setUser({ ...tempUser, twoFactorEnabled: true });
+        setRequiresSetup2FA(false);
+      }
+      
+      return {
+        success: true,
+        message: '✅ 2FA configurado correctamente. Tu cuenta ahora está protegida.'
+      };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Error al completar configuración 2FA';
+      return {
+        success: false,
+        message
+      };
     }
   };
 
@@ -365,6 +492,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated,
     loading,
     requiresTwoFactor,
+    requiresSetup2FA,
     tempUser,
     signIn,
     verifyTwoFactor,
@@ -375,6 +503,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     refreshUser,
     trackCertificate,
     toggleTwoFactor,
+    completeSetup2FA,
   };
 
   return (

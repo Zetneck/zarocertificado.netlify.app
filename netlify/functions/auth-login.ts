@@ -73,39 +73,104 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Actualizar último login
+    // LÓGICA DE 2FA OBLIGATORIO
+    const hasSecret = user.two_factor_secret && user.two_factor_secret.length > 0;
+    const is2FAEnabled = user.two_factor_enabled === true;
+
+    // Si el usuario NO tiene secret configurado (usuario nuevo)
+    if (!hasSecret) {
+      // Generar token temporal para acceso a configuración
+      const tempToken = jwt.sign(
+        { 
+          id: user.id, 
+          email: user.email,
+          role: user.role,
+          needsSetup2FA: true
+        },
+        process.env.JWT_SECRET || 'tu-jwt-secret-muy-seguro',
+        { expiresIn: '24h' } // Token temporal de 24 horas
+      );
+
+      // Preparar datos del usuario para setup
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
+      const { password_hash, two_factor_secret, two_factor_enabled, created_at, last_login, updated_at, ...baseUserData } = user;
+      
+      const userData = {
+        ...baseUserData,
+        twoFactorEnabled: false,
+        needsSetup2FA: true,
+        createdAt: created_at,
+        lastLogin: last_login,
+        updatedAt: updated_at
+      };
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          user: userData,
+          tempToken: tempToken,
+          requiresSetup2FA: true,
+          message: 'Login exitoso. Debes configurar 2FA para continuar.'
+        })
+      };
+    }
+
+    // Si tiene secret pero no está habilitado, forzar habilitación
+    if (hasSecret && !is2FAEnabled) {
+      await client.query(
+        'UPDATE users SET two_factor_enabled = true WHERE id = $1',
+        [user.id]
+      );
+    }
+
+    // Si ya tiene 2FA configurado, requerir verificación
+    if (hasSecret && (is2FAEnabled || !is2FAEnabled)) {
+      // Generar token temporal para verificación 2FA
+      const tempToken = jwt.sign(
+        { 
+          id: user.id, 
+          email: user.email,
+          role: user.role,
+          requiresTwoFactor: true
+        },
+        process.env.JWT_SECRET || 'tu-jwt-secret-muy-seguro',
+        { expiresIn: '24h' }
+      );
+
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          requiresTwoFactor: true,
+          tempToken: tempToken,
+          message: 'Ingresa el código de tu aplicación autenticadora'
+        })
+      };
+    }
+
+    // Actualizar último login solo si llega aquí (caso de emergencia)
     await client.query(
       'UPDATE users SET last_login = NOW() WHERE id = $1',
       [user.id]
     );
 
-    // Log de acceso exitoso (opcional)
-    try {
-      await client.query(
-        `INSERT INTO access_logs (user_id, ip_address, user_agent, success)
-         VALUES ($1, $2, $3, true)`,
-        [
-          user.id,
-          event.headers['x-forwarded-for'] || 'unknown',
-          event.headers['user-agent'] || 'unknown'
-        ]
-      );
-    } catch (logError) {
-      console.warn('Error logging access:', logError);
-    }
-
-    // Generar JWT
+    // Este código solo debería ejecutarse en casos de emergencia
+    // La mayoría de usuarios deberían pasar por la lógica de 2FA arriba
+    
+    // Generar JWT de emergencia
     const token = jwt.sign(
       { 
         id: user.id, 
         email: user.email,
-        role: user.role 
+        role: user.role,
+        emergency: true
       },
-      process.env.JWT_SECRET || 'your-secret-key-change-this',
+      process.env.JWT_SECRET || 'tu-jwt-secret-muy-seguro',
       { expiresIn: '24h' }
     );
 
-    // Preparar datos del usuario (sin campos sensibles y con camelCase)
+    // Preparar datos del usuario
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password_hash, two_factor_secret, two_factor_enabled, created_at, last_login, updated_at, ...baseUserData } = user;
     
@@ -124,7 +189,7 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify({
         user: userData,
         token,
-        message: 'Login exitoso'
+        message: 'Login de emergencia - Configura 2FA inmediatamente'
       })
     };
 

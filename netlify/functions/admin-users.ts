@@ -67,12 +67,13 @@ export const handler: Handler = async (event) => {
                 two_factor_enabled, created_at, last_login,
                 (SELECT COUNT(*) FROM certificate_usage WHERE user_id = users.id) as certificates_count
          FROM users 
+         WHERE email NOT LIKE '%_deleted_%'
          ORDER BY created_at DESC 
          LIMIT $1 OFFSET $2`,
         [limit, offset]
       );
 
-      const countResult = await client.query('SELECT COUNT(*) FROM users');
+      const countResult = await client.query('SELECT COUNT(*) FROM users WHERE email NOT LIKE \'%_deleted_%\'');
 
       return {
         statusCode: 200,
@@ -191,6 +192,7 @@ export const handler: Handler = async (event) => {
     } else if (event.httpMethod === 'DELETE') {
       // Eliminar usuario
       const userId = event.queryStringParameters?.id;
+      const permanent = event.queryStringParameters?.permanent === 'true';
 
       if (!userId) {
         return {
@@ -200,17 +202,29 @@ export const handler: Handler = async (event) => {
         };
       }
 
-      // Soft delete - marcar email como eliminado
-      await client.query(
-        'UPDATE users SET email = CONCAT(email, \'_deleted_\', extract(epoch from now())), updated_at = NOW() WHERE id = $1',
-        [userId]
-      );
+      if (permanent) {
+        // Eliminación permanente - eliminar registros relacionados primero
+        await client.query('DELETE FROM certificate_usage WHERE user_id = $1', [userId]);
+        await client.query('DELETE FROM users WHERE id = $1', [userId]);
+        
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ message: 'Usuario eliminado permanentemente' })
+        };
+      } else {
+        // Soft delete - marcar email como eliminado
+        await client.query(
+          'UPDATE users SET email = CONCAT(email, \'_deleted_\', extract(epoch from now())), updated_at = NOW() WHERE id = $1',
+          [userId]
+        );
 
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ message: 'Usuario eliminado exitosamente' })
-      };
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({ message: 'Usuario eliminado exitosamente' })
+        };
+      }
     }
 
     return {
