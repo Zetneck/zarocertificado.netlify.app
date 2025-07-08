@@ -61,34 +61,35 @@ export function LoginForm() {
     }
 
     try {
-      console.log('🔄 Iniciando login desde LoginForm:', { email });
-      
       const result = await signIn(email, password);
       
-      console.log('✅ Resultado del signIn:', result);
-      
-      // El ProtectedRoute manejará automáticamente la redirección
-      // basándose en los estados del contexto de autenticación
+      // Si llegamos aquí, el login fue exitoso
       if (result?.success) {
-        // Login successful
-        console.log('✅ Login exitoso');
+        // Login exitoso - no necesita log
       }
     } catch (error) {
-      console.error('❌ Error capturado en LoginForm:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
-      console.log('❌ Mensaje de error procesado:', errorMessage);
+      const normalizedMessage = errorMessage.toLowerCase().trim();
       
       // Manejar diferentes tipos de errores
-      if (errorMessage.includes('Credenciales incorrectas')) {
+      if (normalizedMessage.includes('credenciales incorrectas') || 
+          normalizedMessage.includes('credentials') || 
+          normalizedMessage.includes('invalid credentials')) {
         setError('❌ Correo electrónico o contraseña incorrectos. Por favor verifica tus datos.');
-      } else if (errorMessage.includes('Email y contraseña son requeridos')) {
+      } else if (normalizedMessage.includes('email y contraseña son requeridos') || 
+                 normalizedMessage.includes('required')) {
         setError('📝 Por favor completa todos los campos requeridos.');
-      } else if (errorMessage.includes('Error interno del servidor')) {
+      } else if (normalizedMessage.includes('error interno del servidor') || 
+                 normalizedMessage.includes('internal server error')) {
         setError('🔧 Error del servidor. Por favor intenta nuevamente en unos momentos.');
-      } else if (errorMessage.includes('fetch') || errorMessage.includes('network') || errorMessage.includes('conexión')) {
+      } else if (normalizedMessage.includes('fetch') || 
+                 normalizedMessage.includes('network') || 
+                 normalizedMessage.includes('conexión')) {
         setError('🌐 Error de conexión. Por favor verifica tu internet e intenta nuevamente.');
-      } else if (errorMessage.includes('bloqueado') || errorMessage.includes('suspendido')) {
+      } else if (normalizedMessage.includes('bloqueado') || 
+                 normalizedMessage.includes('suspendido') || 
+                 normalizedMessage.includes('blocked')) {
         setError('🔒 Tu cuenta ha sido suspendida. Contacta al administrador.');
       } else {
         // Para cualquier otro error, mostrar el mensaje específico
@@ -313,7 +314,7 @@ export function LoginForm() {
               >
                 <Box>
                   {error}
-                  {error.includes('Credenciales incorrectas') && (
+                  {error.includes('❌ Correo electrónico o contraseña incorrectos') && (
                     <Box sx={{ mt: 1, fontSize: '0.85em', opacity: 0.8 }}>
                       💡 Consejos:
                       <br />• Verifica que el correo esté escrito correctamente

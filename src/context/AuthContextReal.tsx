@@ -71,16 +71,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Función para refrescar usuario (definida temprano para poder usarla en useEffects)
   const refreshUser = useCallback(async () => {
     try {
-      console.log('🔄 Actualizando estado del usuario desde servidor...');
       const response = await authenticatedFetch(`${API_BASE}/user`);
       
       if (response.ok) {
         const data = await response.json();
-        console.log('✅ Usuario actualizado:', {
-          email: data.user.email,
-          twoFactorEnabled: data.user.twoFactorEnabled,
-          role: data.user.role
-        });
         
         // Verificar si hay cambios importantes en el estado de 2FA
         if (user && user.twoFactorEnabled !== data.user.twoFactorEnabled) {
@@ -393,14 +387,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.log('📡 Respuesta del servidor:', { 
         ok: response.ok, 
         status: response.status, 
-        data 
+        error: data.error 
       });
 
       if (!response.ok) {
-        console.log('❌ Error del servidor:', { 
-          status: response.status, 
-          error: data.error 
-        });
+        // CRÍTICO: Poner loading en false INMEDIATAMENTE antes del error
+        setLoading(false);
         throw new Error(data.error || 'Error de autenticación');
       }
 
@@ -470,6 +462,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error de conexión';
       console.error('❌ Error en signIn:', message);
+      
+      // IMPORTANTE: Asegurar que loading se ponga en false ANTES de lanzar el error
+      setLoading(false);
+      
       throw new Error(message);
     } finally {
       setLoading(false);
