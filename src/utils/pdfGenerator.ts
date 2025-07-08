@@ -54,6 +54,56 @@ export const generatePDF = async (data: CertificateData): Promise<PDFResult> => 
       throw new Error('La fecha final no puede ser anterior a la fecha de inicio');
     }
 
+    // Pre-cargar imágenes para mejor rendimiento en móvil
+    const preloadImage = (src: string): Promise<HTMLImageElement> => {
+      return new Promise((resolve, reject) => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = src + '?t=' + Date.now();
+      });
+    };
+
+    // Intentar pre-cargar todas las imágenes
+    const logoSources = ['/logo.png', './logo.png', 'logo.png'];
+    const firmaAutorizadoSources = ['/firma-autorizado.png', './firma-autorizado.png', 'firma-autorizado.png'];
+    const firmaTecnicoSources = ['/firma-tecnico.png', './firma-tecnico.png', 'firma-tecnico.png'];
+
+    let logoImg: HTMLImageElement | null = null;
+    let firmaAutorizadoImg: HTMLImageElement | null = null;
+    let firmaTecnicoImg: HTMLImageElement | null = null;
+
+    // Pre-cargar logo
+    for (const src of logoSources) {
+      try {
+        logoImg = await preloadImage(src);
+        break;
+      } catch {
+        console.warn(`No se pudo cargar logo desde: ${src}`);
+      }
+    }
+
+    // Pre-cargar firma autorizado
+    for (const src of firmaAutorizadoSources) {
+      try {
+        firmaAutorizadoImg = await preloadImage(src);
+        break;
+      } catch {
+        console.warn(`No se pudo cargar firma autorizado desde: ${src}`);
+      }
+    }
+
+    // Pre-cargar firma técnico
+    for (const src of firmaTecnicoSources) {
+      try {
+        firmaTecnicoImg = await preloadImage(src);
+        break;
+      } catch {
+        console.warn(`No se pudo cargar firma técnico desde: ${src}`);
+      }
+    }
+
     // Crear PDF en orientación horizontal como en la imagen
     const doc = new jsPDF({
       orientation: 'landscape',
@@ -65,115 +115,92 @@ export const generatePDF = async (data: CertificateData): Promise<PDFResult> => 
     const margin = 40;
     let currentY = 50;
 
-    // Función para dibujar el logo de PROGILSA desde imagen
-    const drawProgilsaLogo = async (x: number, y: number) => {
+    // Función para dibujar el logo de PROGILSA desde imagen pre-cargada
+    const drawProgilsaLogo = (x: number, y: number) => {
       try {
-        // Cargar la imagen del logo desde la carpeta public
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        
-        await new Promise((resolve, reject) => {
-          img.onload = () => {
-            try {
-              // Calcular proporciones correctas basadas en la imagen original
-              const originalWidth = 580;
-              const originalHeight = 385;
-              const aspectRatio = originalWidth / originalHeight;
-              
-              // Definir el ancho deseado en el PDF y calcular altura proporcional
-              const logoWidth = 170; // Tamaño óptimo para el layout
-              const logoHeight = logoWidth / aspectRatio;
-              
-              // Crear un canvas con alta resolución para mejor calidad
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              
-              // Usar dimensiones más altas para mejor calidad
-              const scale = 2; // Factor de escala para mejor resolución
-              canvas.width = logoWidth * scale;
-              canvas.height = logoHeight * scale;
-              
-              // Configurar el contexto para mejor calidad
-              if (ctx) {
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                
-                // Dibujar la imagen en el canvas con alta calidad
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              }
-              
-              // Convertir a data URL con alta calidad
-              const dataURL = canvas.toDataURL('image/png', 1.0);
-              
-              // Agregar la imagen al PDF con las dimensiones correctas
-              doc.addImage(dataURL, 'PNG', x, y, logoWidth, logoHeight);
-              resolve(dataURL);
-            } catch (error) {
-              reject(error);
-            }
-          };
+        if (logoImg) {
+          // Calcular proporciones correctas basadas en la imagen original
+          const originalWidth = logoImg.width || 580;
+          const originalHeight = logoImg.height || 385;
+          const aspectRatio = originalWidth / originalHeight;
           
-          img.onerror = reject;
-          img.src = '/logo.png'; // Ruta desde la carpeta public
-        });
-        
-      } catch (error) {
-        console.warn('Error cargando logo desde archivo, usando fallback:', error);
-        // Fallback al logo dibujado si hay error
-        try {
+          // Definir el ancho deseado en el PDF y calcular altura proporcional
+          const logoWidth = 170; // Tamaño óptimo para el layout
+          const logoHeight = logoWidth / aspectRatio;
+          
+          // Crear un canvas con alta resolución para mejor calidad
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Usar dimensiones más altas para mejor calidad
+          const scale = 3; // Aumentado para mejor calidad en móvil
+          canvas.width = logoWidth * scale;
+          canvas.height = logoHeight * scale;
+          
+          // Configurar el contexto para mejor calidad
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            // Fondo blanco para evitar transparencias problemáticas
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Dibujar la imagen en el canvas con alta calidad
+            ctx.drawImage(logoImg, 0, 0, canvas.width, canvas.height);
+          }
+          
+          // Convertir a data URL con máxima calidad
+          const dataURL = canvas.toDataURL('image/png', 1.0);
+          
+          // Agregar la imagen al PDF con las dimensiones correctas
+          doc.addImage(dataURL, 'PNG', x, y, logoWidth, logoHeight);
+        } else {
+          // Usar fallback si no hay imagen
           drawFallbackLogo(x, y);
-        } catch (fallbackError) {
-          console.error('Error crítico al crear logo fallback:', fallbackError);
-          // Continuar sin logo si hay error crítico
         }
+      } catch (error) {
+        console.warn('Error procesando logo, usando fallback:', error);
+        drawFallbackLogo(x, y);
       }
     };
 
-    // Función para dibujar firma desde imagen
-    const drawSignature = async (imagePath: string, x: number, y: number, width: number = 100, height: number = 40) => {
+    // Función para dibujar firma desde imagen pre-cargada
+    const drawSignature = (img: HTMLImageElement | null, x: number, y: number, width: number = 100, height: number = 40) => {
       try {
-        const img = new Image();
-        img.crossOrigin = 'anonymous';
-        
-        await new Promise((resolve, reject) => {
-          img.onload = () => {
-            try {
-              // Crear un canvas con alta resolución para mejor calidad
-              const canvas = document.createElement('canvas');
-              const ctx = canvas.getContext('2d');
-              
-              // Usar dimensiones más altas para mejor calidad
-              const scale = 2;
-              canvas.width = width * scale;
-              canvas.height = height * scale;
-              
-              // Configurar el contexto para mejor calidad
-              if (ctx) {
-                ctx.imageSmoothingEnabled = true;
-                ctx.imageSmoothingQuality = 'high';
-                
-                // Dibujar la imagen en el canvas con alta calidad
-                ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-              }
-              
-              // Convertir a data URL con alta calidad
-              const dataURL = canvas.toDataURL('image/png', 1.0);
-              
-              // Agregar la imagen al PDF
-              doc.addImage(dataURL, 'PNG', x, y, width, height);
-              resolve(dataURL);
-            } catch (error) {
-              reject(error);
-            }
-          };
+        if (img) {
+          // Crear un canvas con alta resolución para mejor calidad
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
           
-          img.onerror = reject;
-          img.src = imagePath;
-        });
-        
+          // Usar dimensiones más altas para mejor calidad
+          const scale = 3; // Aumentado para mejor calidad en móvil
+          canvas.width = width * scale;
+          canvas.height = height * scale;
+          
+          // Configurar el contexto para mejor calidad
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            // Fondo blanco para evitar transparencias problemáticas
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Dibujar la imagen en el canvas con alta calidad
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          }
+          
+          // Convertir a data URL con máxima calidad
+          const dataURL = canvas.toDataURL('image/png', 1.0);
+          
+          // Agregar la imagen al PDF
+          doc.addImage(dataURL, 'PNG', x, y, width, height);
+        }
+        // Si no hay imagen, simplemente no agregar nada (líneas y texto se mantienen)
       } catch (error) {
-        console.warn(`Error cargando firma desde ${imagePath}:`, error);
-        // No mostrar nada si hay error, mantener solo las líneas y texto
+        console.warn('Error procesando firma:', error);
+        // Continuar sin la firma si hay error
       }
     };
 
@@ -237,8 +264,8 @@ export const generatePDF = async (data: CertificateData): Promise<PDFResult> => 
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
     
-    // Logo PROGILSA (alineado con el texto de la empresa) - Cargar logo real
-    await drawProgilsaLogo(margin, currentY - 25); // Ajustado para alinear con el texto
+    // Logo PROGILSA (alineado con el texto de la empresa) - Usar logo pre-cargado
+    drawProgilsaLogo(margin, currentY - 25); // Ajustado para alinear con el texto
     
     // Información de la empresa (esquina superior derecha)
     const rightMargin = pageWidth - margin;
@@ -396,7 +423,8 @@ export const generatePDF = async (data: CertificateData): Promise<PDFResult> => 
     // Cargar y dibujar firma del autorizado (encima de la línea)
     const firmaAutorizadoY = signatureY - 50; // Ajustado para firma más grande
     const firmaAutorizadoX = leftSignatureX + (signatureLineWidth - 120) / 2; // Centrada
-    await drawSignature('/firma-autorizado.png', firmaAutorizadoX, firmaAutorizadoY, 120, 48);
+    
+    drawSignature(firmaAutorizadoImg, firmaAutorizadoX, firmaAutorizadoY, 120, 48);
     
     // Línea de firma izquierda
     doc.line(leftSignatureX, signatureY, leftSignatureX + signatureLineWidth, signatureY);
@@ -417,7 +445,8 @@ export const generatePDF = async (data: CertificateData): Promise<PDFResult> => 
     // Cargar y dibujar firma del técnico (encima de la línea)
     const firmaTecnicoY = signatureY - 45; // Ajustado para firma más grande
     const firmaTecnicoX = rightSignatureX + (signatureLineWidth - 100) / 2; // Centrada
-    await drawSignature('/firma-tecnico.png', firmaTecnicoX, firmaTecnicoY, 100, 40);
+    
+    drawSignature(firmaTecnicoImg, firmaTecnicoX, firmaTecnicoY, 100, 40);
     
     doc.line(rightSignatureX, signatureY, rightSignatureX + signatureLineWidth, signatureY);
     
