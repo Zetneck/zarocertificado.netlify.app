@@ -33,6 +33,8 @@ export function TwoFactorSettings({ open, onClose }: TwoFactorSettingsProps) {
   const [showSetup, setShowSetup] = useState(false);
   const [showChangePassword, setShowChangePassword] = useState(false);
 
+  console.log('TwoFactorSettings - showChangePassword:', showChangePassword); // Debug log
+
   const handleEnable2FA = async () => {
     if (!user?.twoFactorEnabled) {
       // Mostrar setup para usuarios que no tienen 2FA
@@ -75,10 +77,12 @@ export function TwoFactorSettings({ open, onClose }: TwoFactorSettingsProps) {
   };
 
   const handleOpenChangePassword = () => {
+    console.log('handleOpenChangePassword clicked'); // Debug log
     setShowChangePassword(true);
   };
 
   const handleCloseChangePassword = () => {
+    console.log('handleCloseChangePassword called'); // Debug log
     setShowChangePassword(false);
   };
   
@@ -182,7 +186,15 @@ export function TwoFactorSettings({ open, onClose }: TwoFactorSettingsProps) {
       
       {!showSetup && (
         <DialogActions>
-          <Button onClick={handleOpenChangePassword} disabled={loading}>
+          <Button 
+            onClick={() => {
+              console.log('Botón Cambiar contraseña presionado!'); // Debug log
+              handleOpenChangePassword();
+            }} 
+            disabled={loading}
+            variant="outlined"
+            color="secondary"
+          >
             Cambiar contraseña
           </Button>
           <Button onClick={handleClose} disabled={loading}>

@@ -22,7 +22,10 @@ export function ChangePasswordDialog({ open, onClose }: ChangePasswordDialogProp
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
+  console.log('ChangePasswordDialog - open:', open); // Debug log
+
   const handleChangePassword = async () => {
+    console.log('handleChangePassword clicked'); // Debug log
     if (newPassword !== confirmPassword) {
       setMessage({ type: 'error', text: 'Las contraseñas no coinciden' });
       return;
