@@ -30,6 +30,7 @@ import {
   ArrowBack
 } from '@mui/icons-material';
 import { useAuthReal } from '../hooks/useAuthReal';
+import { ChangePasswordDialog } from './ChangePasswordDialog';
 
 interface UserSettingsProps {
   onBack: () => void;
@@ -45,6 +46,7 @@ export function UserSettings({ onBack, mode, toggleMode }: UserSettingsProps) {
     autoSave: user?.settings?.autoSave ?? true
   });
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
   const [deleteConfirmation, setDeleteConfirmation] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
@@ -227,7 +229,11 @@ export function UserSettings({ onBack, mode, toggleMode }: UserSettingsProps) {
                 secondary="Actualizar tu contraseña de acceso"
               />
               <ListItemSecondaryAction>
-                <Button variant="outlined" size="small">
+                <Button 
+                  variant="outlined" 
+                  size="small"
+                  onClick={() => setShowChangePassword(true)}
+                >
                   Cambiar
                 </Button>
               </ListItemSecondaryAction>
@@ -342,6 +348,12 @@ export function UserSettings({ onBack, mode, toggleMode }: UserSettingsProps) {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Diálogo de cambio de contraseña */}
+      <ChangePasswordDialog
+        open={showChangePassword}
+        onClose={() => setShowChangePassword(false)}
+      />
     </Box>
   );
 }
