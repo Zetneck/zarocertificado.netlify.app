@@ -21,6 +21,7 @@ import {
   Login as LoginIcon
 } from '@mui/icons-material';
 import { useAuthReal } from '../hooks/useAuthReal';
+import { useResponsive } from '../hooks/useResponsive';
 import { useTheme } from '@mui/material/styles';
 
 export function LoginForm() {
@@ -34,6 +35,7 @@ export function LoginForm() {
   }>({});
   
   const { signIn, loading } = useAuthReal();
+  const { isMobile } = useResponsive();
   const theme = useTheme();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -251,7 +253,7 @@ export function LoginForm() {
                 if (error) setError(null);
               }}
               margin="normal"
-              size={window.innerWidth < 600 ? "small" : "medium"}
+              size={isMobile ? "small" : "medium"}
               error={!!fieldErrors.email}
               helperText={fieldErrors.email}
               InputProps={{
@@ -277,7 +279,7 @@ export function LoginForm() {
                 if (error) setError(null);
               }}
               margin="normal"
-              size={window.innerWidth < 600 ? "small" : "medium"}
+              size={isMobile ? "small" : "medium"}
               error={!!fieldErrors.password}
               helperText={fieldErrors.password}
               InputProps={{
@@ -291,7 +293,7 @@ export function LoginForm() {
                     <IconButton
                       onClick={() => setShowPassword(!showPassword)}
                       edge="end"
-                      size={window.innerWidth < 600 ? "small" : "medium"}
+                      size={isMobile ? "small" : "medium"}
                     >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
@@ -330,7 +332,7 @@ export function LoginForm() {
               type="submit"
               fullWidth
               variant="contained"
-              size={window.innerWidth < 600 ? "medium" : "large"}
+              size={isMobile ? "medium" : "large"}
               disabled={loading}
               startIcon={loading ? <CircularProgress size={20} /> : <LoginIcon />}
               sx={{ 

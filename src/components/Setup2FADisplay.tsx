@@ -21,6 +21,7 @@ import {
   ArrowForward
 } from '@mui/icons-material';
 import { useAuthReal } from '../hooks/useAuthReal';
+import { useResponsive } from '../hooks/useResponsive';
 
 interface QRData {
   success: boolean;
@@ -51,6 +52,7 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
 
   // Hook de autenticación para refresh
   const { refreshUser } = useAuthReal();
+  const { isMobile } = useResponsive();
 
   const steps = [
     'Generar código QR',
@@ -329,7 +331,7 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
             <Button 
               onClick={onCancel} 
               variant="outlined" 
-              size={window.innerWidth < 600 ? "small" : "medium"}
+              size={isMobile ? "small" : "medium"}
               sx={{ 
                 order: { xs: 2, sm: 1 },
                 fontSize: { xs: '0.8rem', sm: '0.9rem' }
@@ -340,7 +342,7 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
             <Button 
               onClick={() => setActiveStep(2)} 
               variant="contained"
-              size={window.innerWidth < 600 ? "small" : "medium"}
+              size={isMobile ? "small" : "medium"}
               startIcon={<ArrowForward sx={{ fontSize: { xs: '1rem', sm: '1.2rem' } }} />}
               sx={{ 
                 order: { xs: 1, sm: 2 },
@@ -460,7 +462,7 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
               }}
               error={!!verificationError}
               helperText={verificationError || 'Código de tu app autenticadora'}
-              size={window.innerWidth < 600 ? "small" : "medium"}
+              size={isMobile ? "small" : "medium"}
               FormHelperTextProps={{
                 sx: { 
                   fontSize: { xs: '0.7rem', sm: '0.75rem' },
@@ -509,7 +511,7 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
                 onClick={() => setActiveStep(1)} 
                 variant="outlined"
                 disabled={verifying}
-                size={window.innerWidth < 600 ? "small" : "medium"}
+                size={isMobile ? "small" : "medium"}
                 sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}
               >
                 Volver
@@ -519,7 +521,7 @@ export function Setup2FADisplay({ onComplete, onCancel }: Setup2FADisplayProps) 
                 variant="contained"
                 disabled={verifying || verificationCode.length !== 6}
                 startIcon={verifying ? <CircularProgress size={16} /> : <CheckCircle />}
-                size={window.innerWidth < 600 ? "small" : "medium"}
+                size={isMobile ? "small" : "medium"}
                 sx={{ fontSize: { xs: '0.8rem', sm: '0.9rem' } }}
               >
                 {verifying ? 'Verificando...' : 'Activar 2FA'}
