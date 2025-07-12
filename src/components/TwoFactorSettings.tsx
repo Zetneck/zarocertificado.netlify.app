@@ -124,25 +124,60 @@ export function TwoFactorSettings({ open, onClose }: TwoFactorSettingsProps) {
 
             {user?.twoFactorEnabled ? (
               // Usuario con 2FA ya habilitado - Solo informativo
-              <Box sx={{ p: 2, bgcolor: 'success.light', borderRadius: 1, border: 1, borderColor: 'success.main' }}>
-                <Typography variant="subtitle2" sx={{ color: 'success.dark', mb: 1 }}>
+              <Box sx={{ 
+                p: 3, 
+                bgcolor: 'rgba(76, 175, 80, 0.1)', 
+                borderRadius: 2, 
+                border: 1, 
+                borderColor: 'success.main' 
+              }}>
+                <Typography variant="subtitle2" sx={{ 
+                  color: 'success.main', 
+                  mb: 1, 
+                  fontWeight: 600,
+                  fontSize: '1rem'
+                }}>
                   ✅ Autenticación de dos factores activa
                 </Typography>
-                <Typography variant="body2" sx={{ color: 'success.dark', mb: 2 }}>
+                <Typography variant="body2" sx={{ 
+                  color: 'text.primary', 
+                  mb: 2,
+                  lineHeight: 1.6
+                }}>
                   Tu cuenta está protegida. El 2FA es obligatorio y no se puede deshabilitar por seguridad.
                 </Typography>
-                <Typography variant="caption" sx={{ color: 'success.dark' }}>
+                <Typography variant="body2" sx={{ 
+                  color: 'text.secondary',
+                  fontStyle: 'italic'
+                }}>
                   Usa tu aplicación autenticadora (Google Authenticator) para generar códigos de acceso.
                 </Typography>
               </Box>
             ) : (
               // Usuario sin 2FA - Mostrar botón para habilitar
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', p: 2, bgcolor: 'warning.light', borderRadius: 1, border: 1, borderColor: 'warning.main' }}>
+              <Box sx={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                justifyContent: 'space-between', 
+                p: 3, 
+                bgcolor: 'rgba(255, 152, 0, 0.1)', 
+                borderRadius: 2, 
+                border: 1, 
+                borderColor: 'warning.main' 
+              }}>
                 <Box>
-                  <Typography variant="subtitle2" sx={{ color: 'warning.dark' }}>
+                  <Typography variant="subtitle2" sx={{ 
+                    color: 'warning.main', 
+                    fontWeight: 600,
+                    fontSize: '1rem',
+                    mb: 0.5
+                  }}>
                     🔒 Habilitar autenticación de dos factores
                   </Typography>
-                  <Typography variant="body2" sx={{ color: 'warning.dark' }}>
+                  <Typography variant="body2" sx={{ 
+                    color: 'text.primary',
+                    lineHeight: 1.6
+                  }}>
                     Requerido para proteger tu cuenta. Configura Google Authenticator.
                   </Typography>
                 </Box>
