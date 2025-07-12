@@ -85,10 +85,27 @@ export const handler: Handler = async (event) => {
         };
       }
 
+      const user = result.rows[0];
+      
+      // Mapear campos de BD (snake_case) a frontend (camelCase)
+      const userResponse = {
+        id: user.id,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+        phone: user.phone,
+        department: user.department,
+        credits: user.credits,
+        twoFactorEnabled: user.two_factor_enabled, // Mapeo correcto
+        settings: user.settings,
+        createdAt: user.created_at,
+        lastLogin: user.last_login
+      };
+
       return {
         statusCode: 200,
         headers,
-        body: JSON.stringify({ user: result.rows[0] })
+        body: JSON.stringify({ user: userResponse })
       };
 
     } else if (event.httpMethod === 'PUT') {
