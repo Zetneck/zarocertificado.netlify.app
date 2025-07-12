@@ -19,6 +19,7 @@ import {
 } from '@mui/icons-material';
 import { useAuthReal } from '../hooks/useAuthReal';
 import { Setup2FADisplay } from './Setup2FADisplay';
+import { ChangePasswordDialog } from './ChangePasswordDialog';
 
 interface TwoFactorSettingsProps {
   open: boolean;
@@ -30,6 +31,7 @@ export function TwoFactorSettings({ open, onClose }: TwoFactorSettingsProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showSetup, setShowSetup] = useState(false);
+  const [showChangePassword, setShowChangePassword] = useState(false);
 
   const handleEnable2FA = async () => {
     if (!user?.twoFactorEnabled) {
@@ -70,6 +72,14 @@ export function TwoFactorSettings({ open, onClose }: TwoFactorSettingsProps) {
     setMessage(null);
     setShowSetup(false);
     onClose();
+  };
+
+  const handleOpenChangePassword = () => {
+    setShowChangePassword(true);
+  };
+
+  const handleCloseChangePassword = () => {
+    setShowChangePassword(false);
   };
   
   return (
@@ -172,10 +182,20 @@ export function TwoFactorSettings({ open, onClose }: TwoFactorSettingsProps) {
       
       {!showSetup && (
         <DialogActions>
+          <Button onClick={handleOpenChangePassword} disabled={loading}>
+            Cambiar contraseña
+          </Button>
           <Button onClick={handleClose} disabled={loading}>
             Cerrar
           </Button>
         </DialogActions>
+      )}
+
+      {showChangePassword && (
+        <ChangePasswordDialog
+          open={showChangePassword}
+          onClose={handleCloseChangePassword}
+        />
       )}
     </Dialog>
   );
