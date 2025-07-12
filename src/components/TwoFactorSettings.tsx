@@ -19,7 +19,6 @@ import {
 } from '@mui/icons-material';
 import { useAuthReal } from '../hooks/useAuthReal';
 import { Setup2FADisplay } from './Setup2FADisplay';
-import { ChangePasswordDialog } from './ChangePasswordDialog';
 
 interface TwoFactorSettingsProps {
   open: boolean;
@@ -31,9 +30,6 @@ export function TwoFactorSettings({ open, onClose }: TwoFactorSettingsProps) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [showSetup, setShowSetup] = useState(false);
-  const [showChangePassword, setShowChangePassword] = useState(false);
-
-  console.log('TwoFactorSettings - showChangePassword:', showChangePassword); // Debug log
 
   const handleEnable2FA = async () => {
     if (!user?.twoFactorEnabled) {
@@ -74,16 +70,6 @@ export function TwoFactorSettings({ open, onClose }: TwoFactorSettingsProps) {
     setMessage(null);
     setShowSetup(false);
     onClose();
-  };
-
-  const handleOpenChangePassword = () => {
-    console.log('handleOpenChangePassword clicked'); // Debug log
-    setShowChangePassword(true);
-  };
-
-  const handleCloseChangePassword = () => {
-    console.log('handleCloseChangePassword called'); // Debug log
-    setShowChangePassword(false);
   };
   
   return (
@@ -186,28 +172,10 @@ export function TwoFactorSettings({ open, onClose }: TwoFactorSettingsProps) {
       
       {!showSetup && (
         <DialogActions>
-          <Button 
-            onClick={() => {
-              console.log('Botón Cambiar contraseña presionado!'); // Debug log
-              handleOpenChangePassword();
-            }} 
-            disabled={loading}
-            variant="outlined"
-            color="secondary"
-          >
-            Cambiar contraseña
-          </Button>
           <Button onClick={handleClose} disabled={loading}>
             Cerrar
           </Button>
         </DialogActions>
-      )}
-
-      {showChangePassword && (
-        <ChangePasswordDialog
-          open={showChangePassword}
-          onClose={handleCloseChangePassword}
-        />
       )}
     </Dialog>
   );
