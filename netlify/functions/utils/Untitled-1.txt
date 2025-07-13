@@ -1,0 +1,3 @@
+✅ Access logged successfully: { userId: X, status: 'success' }
+Parsing User Agent: Mozilla/5.0...
+Detected device: Windows 10/11 browser: Chrome 120

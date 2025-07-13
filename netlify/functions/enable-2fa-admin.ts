@@ -2,8 +2,14 @@ import { Client } from 'pg';
 
 export const handler = async () => {
   try {
+    const databaseUrl = process.env.DATABASE_URL?.replace('&channel_binding=require', '').replace('channel_binding=require&', '').replace('?channel_binding=require', '');
+    
+    if (!databaseUrl) {
+      throw new Error('DATABASE_URL no configurada');
+    }
+
     const client = new Client({
-      connectionString: process.env.DATABASE_URL,
+      connectionString: databaseUrl,
       ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
     });
 

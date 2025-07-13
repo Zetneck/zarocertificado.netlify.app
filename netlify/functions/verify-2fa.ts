@@ -2,6 +2,7 @@ import { Handler } from '@netlify/functions';
 import { Client } from 'pg';
 import jwt from 'jsonwebtoken';
 import { authenticator } from 'otplib';
+import { logAccess, getClientIP } from './utils/accessLogger';
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -160,6 +161,15 @@ export const handler: Handler = async (event) => {
     }
 
     if (!isValidCode) {
+      // Registrar acceso fallido por código 2FA incorrecto
+      await logAccess(client, {
+        userId: user.id,
+        ipAddress: getClientIP(event),
+        userAgent: event.headers['user-agent'] || 'Unknown',
+        status: 'failed',
+        twoFactorUsed: true
+      });
+      
       return {
         statusCode: 400,
         headers,
@@ -177,6 +187,15 @@ export const handler: Handler = async (event) => {
       WHERE id = $1
     `;
     await client.query(updateQuery, [userId]);
+
+    // Registrar acceso exitoso
+    await logAccess(client, {
+      userId: user.id,
+      ipAddress: getClientIP(event),
+      userAgent: event.headers['user-agent'] || 'Unknown',
+      status: 'success',
+      twoFactorUsed: true
+    });
 
     // Generar token de autenticación final
     const authToken = jwt.sign(

@@ -89,7 +89,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else {
         console.error('❌ Error al actualizar usuario: token inválido');
         // Token inválido, limpiar datos
-        signOut();
+        localStorage.removeItem('authToken');
+        localStorage.removeItem('user');
+        localStorage.removeItem('tempToken');
+        localStorage.removeItem('tempUser');
+        
+        setUser(null);
+        setIsAuthenticated(false);
+        setRequiresTwoFactor(false);
+        setRequiresSetup2FA(false);
+        setTempUser(null);
       }
     } catch (error) {
       console.error('❌ Error al refrescar usuario:', error);
@@ -116,14 +125,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     console.log('🔓 Sesión cerrada - todos los estados limpiados');
   };
 
-  // Inicializar autenticación
-  useEffect(() => {
-    const initAuth = async () => {
-      // ...existing initAuth code...
-    };
 
-    initAuth();
-  }, []);
 
   // Sincronización periódica cuando la pestaña está activa
   useEffect(() => {

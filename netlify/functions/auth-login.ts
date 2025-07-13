@@ -2,6 +2,7 @@ import { Handler } from '@netlify/functions';
 import { Client } from 'pg';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { logAccess, getClientIP } from './utils/accessLogger';
 
 const headers = {
   'Access-Control-Allow-Origin': '*',
@@ -53,6 +54,30 @@ export const handler: Handler = async (event) => {
     );
 
     if (result.rows.length === 0) {
+      // Intentar registrar acceso fallido (sin user id)
+      try {
+        await client.query(`
+          INSERT INTO access_logs (
+            user_id, 
+            ip_address, 
+            user_agent, 
+            device_type, 
+            browser, 
+            status, 
+            two_factor_used
+          ) VALUES (NULL, $1, $2, $3, $4, $5, $6)
+        `, [
+          getClientIP(event),
+          event.headers['user-agent'] || 'Unknown',
+          'Unknown',
+          'Unknown',
+          'failed',
+          false
+        ]);
+      } catch (logError) {
+        console.error('Error logging failed access:', logError);
+      }
+      
       return {
         statusCode: 401,
         headers,
@@ -66,6 +91,15 @@ export const handler: Handler = async (event) => {
     const validPassword = await bcrypt.compare(password, user.password_hash);
     
     if (!validPassword) {
+      // Registrar acceso fallido
+      await logAccess(client, {
+        userId: user.id,
+        ipAddress: getClientIP(event),
+        userAgent: event.headers['user-agent'] || 'Unknown',
+        status: 'failed',
+        twoFactorUsed: false
+      });
+      
       return {
         statusCode: 401,
         headers,
@@ -79,6 +113,15 @@ export const handler: Handler = async (event) => {
 
     // Si el usuario NO tiene secret configurado (usuario nuevo)
     if (!hasSecret) {
+      // Registrar acceso exitoso - usuario sin 2FA
+      await logAccess(client, {
+        userId: user.id,
+        ipAddress: getClientIP(event),
+        userAgent: event.headers['user-agent'] || 'Unknown',
+        status: 'success',
+        twoFactorUsed: false
+      });
+      
       // Generar token temporal para acceso a configuración
       const tempToken = jwt.sign(
         { 

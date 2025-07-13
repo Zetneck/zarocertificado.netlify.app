@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Access History - Mejoras implementadas</title>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .log-entry { 
+            border: 1px solid #ccc; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 8px; 
+            background: #fafafa;
+        }
+        .debug { 
+            background: #1e1e1e; 
+            color: #00ff00;
+            padding: 15px; 
+            font-family: monospace; 
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        button { 
+            padding: 12px 24px; 
+            margin: 10px 5px; 
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-primary { background: #1976d2; color: white; }
+        .btn-secondary { background: #666; color: white; }
+        .btn-success { background: #2e7d32; color: white; }
+        button:hover { opacity: 0.8; }
+        .status-success { color: #2e7d32; font-weight: bold; }
+        .status-error { color: #d32f2f; font-weight: bold; }
+        .improvements {
+            background: #e8f5e8;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .user-agent-display {
+            background: #e3f2fd;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Test Access History - Mejoras implementadas</h1>
+        
+        <div class="improvements">
+            <h3>✅ Mejoras implementadas:</h3>
+            <ul>
+                <li><strong>Hora corregida:</strong> Timezone México Central (UTC-6)</li>
+                <li><strong>Detección mejorada:</strong> Dispositivo y navegador específicos</li>
+                <li><strong>Formato mejorado:</strong> Windows 10/11 • Chrome 120</li>
+                <li><strong>Sin duplicados:</strong> Prevención en múltiples capas</li>
+            </ul>
+        </div>
+
+        <div class="user-agent-display">
+            <strong>Tu User Agent actual:</strong><br>
+            <span id="currentUserAgent"></span>
+        </div>
+        
+        <button class="btn-primary" onclick="testLogin()">🔑 Test Login</button>
+        <button class="btn-secondary" onclick="testAccessHistory()">📊 Test Access History</button>
+        <button class="btn-success" onclick="showCurrentTime()">🕐 Mostrar Hora Actual</button>
+        <button class="btn-primary" onclick="testInsertAccess()">🧪 Test Insert Access</button>
+        <button onclick="clearLogs()">🗑️ Limpiar Logs</button>
+        
+        <div id="results"></div>
+    </div>
+    
+    <script>
+        let authToken = null;
+        
+        // Mostrar user agent actual
+        document.getElementById('currentUserAgent').textContent = navigator.userAgent;
+        
+        function log(message, data = null, type = 'info') {
+            const div = document.getElementById('results');
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            const statusClass = type === 'error' ? 'status-error' : 
+                               type === 'success' ? 'status-success' : '';
+            
+            entry.innerHTML = `
+                <strong class="${statusClass}">${new Date().toLocaleString('es-ES', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit',
+                    timeZone: 'America/Mexico_City'
+                })}</strong><br>
+                ${message}<br>
+                ${data ? `<pre class="debug">${JSON.stringify(data, null, 2)}</pre>` : ''}
+            `;
+            div.appendChild(entry);
+            entry.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function clearLogs() {
+            document.getElementById('results').innerHTML = '';
+        }
+        
+        function showCurrentTime() {
+            const now = new Date();
+            const mexicanTime = now.toLocaleString('es-ES', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZone: 'America/Mexico_City'
+            });
+            
+            log(`⏰ Hora actual en México Central: ${mexicanTime}`, {
+                utc: now.toISOString(),
+                local: now.toLocaleString(),
+                mexican: mexicanTime,
+                timezone: 'America/Mexico_City (UTC-6)'
+            }, 'success');
+        }
+        
+        async function testLogin() {
+            try {
+                // Mostrar información del dispositivo que se enviará
+                const deviceInfo = detectDevice();
+                log('🔍 Información del dispositivo detectada:', deviceInfo, 'info');
+                
+                const response = await fetch('/.netlify/functions/auth-login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'User-Agent': navigator.userAgent
+                    },
+                    body: JSON.stringify({
+                        email: 'test@example.com', // ⚠️ Reemplaza con email válido
+                        password: 'password123'    // ⚠️ Reemplaza con password válido
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Login Response', { status: response.status, data }, 'success');
+                    
+                    if (data.token) {
+                        authToken = data.token;
+                        localStorage.setItem('authToken', authToken);
+                        log('🔑 Token guardado correctamente', null, 'success');
+                        
+                        // Automaticamente probar historial después del login
+                        setTimeout(() => testAccessHistory(), 1000);
+                    }
+                } else {
+                    log('❌ Error en login', { status: response.status, data }, 'error');
+                }
+                
+            } catch (error) {
+                log('❌ Error en login', error, 'error');
+            }
+        }
+        
+        async function testAccessHistory() {
+            if (!authToken) {
+                authToken = localStorage.getItem('authToken');
+            }
+            
+            if (!authToken) {
+                log('⚠️ Error: No hay token de autenticación. Haz login primero.', null, 'error');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/.netlify/functions/access-history', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('📊 Access History Response', { status: response.status, data }, 'success');
+                    
+                    if (data.data && data.data.length > 0) {
+                        log(`📈 Encontrados ${data.data.length} registros de acceso`, null, 'success');
+                        
+                        // Verificar duplicados
+                        const timestamps = data.data.map(item => item.timestamp);
+                        const uniqueTimestamps = [...new Set(timestamps)];
+                        
+                        if (timestamps.length !== uniqueTimestamps.length) {
+                            log('⚠️ DUPLICADOS DETECTADOS', {
+                                total: timestamps.length,
+                                unique: uniqueTimestamps.length
+                            }, 'error');
+                        } else {
+                            log('✅ No hay duplicados detectados', null, 'success');
+                        }
+                        
+                        // Analizar las mejoras implementadas
+                        const latestEntry = data.data[0];
+                        log('🔍 Análisis del último acceso:', {
+                            fecha_mejorada: latestEntry.date,
+                            dispositivo_detectado: latestEntry.device,
+                            ip_formateada: latestEntry.ip,
+                            user_agent_completo: latestEntry.userAgent,
+                            timestamp: latestEntry.timestamp
+                        }, 'info');
+                        
+                        // Mostrar todos los registros formateados
+                        log('📋 Todos los registros:', data.data.map(item => ({
+                            fecha: item.date,
+                            dispositivo: item.device,
+                            ip: item.ip,
+                            estado: item.status
+                        })), 'info');
+                        
+                    } else {
+                        log('📭 No se encontraron registros de acceso', null, 'info');
+                    }
+                } else {
+                    log('❌ Error obteniendo historial', { status: response.status, data }, 'error');
+                }
+                
+            } catch (error) {
+                log('❌ Error en access history', error, 'error');
+            }
+        }
+        
+        function detectDevice() {
+            const ua = navigator.userAgent;
+            let device = 'Desktop';
+            let browser = 'Navegador desconocido';
+            
+            // Detectar dispositivo
+            if (ua.includes('iPhone')) device = 'iPhone';
+            else if (ua.includes('iPad')) device = 'iPad';
+            else if (ua.includes('Android') && ua.includes('Mobile')) device = 'Android Mobile';
+            else if (ua.includes('Android')) device = 'Android Tablet';
+            else if (ua.includes('Windows NT 10')) device = 'Windows 10/11';
+            else if (ua.includes('Windows NT 6.3')) device = 'Windows 8.1';
+            else if (ua.includes('Windows NT 6.1')) device = 'Windows 7';
+            else if (ua.includes('Windows')) device = 'Windows';
+            else if (ua.includes('Mac OS X') || ua.includes('Macintosh')) device = 'macOS';
+            else if (ua.includes('Linux')) device = 'Linux';
+            
+            // Detectar navegador
+            if (ua.includes('Edg/')) browser = 'Edge';
+            else if (ua.includes('Chrome/') && !ua.includes('Edg') && !ua.includes('Opera')) {
+                const chromeMatch = ua.match(/Chrome\/(\d+)/);
+                browser = chromeMatch ? `Chrome ${chromeMatch[1]}` : 'Chrome';
+            }
+            else if (ua.includes('Firefox/')) {
+                const firefoxMatch = ua.match(/Firefox\/(\d+)/);
+                browser = firefoxMatch ? `Firefox ${firefoxMatch[1]}` : 'Firefox';
+            }
+            else if (ua.includes('Safari/') && !ua.includes('Chrome')) browser = 'Safari';
+            else if (ua.includes('Opera') || ua.includes('OPR/')) browser = 'Opera';
+            
+            return { device, browser, combined: `${device} • ${browser}`, userAgent: ua };
+        }
+        
+        async function testInsertAccess() {
+            try {
+                log('🧪 Probando inserción directa de acceso...', null, 'info');
+                
+                const response = await fetch('/.netlify/functions/test-access-log', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'User-Agent': navigator.userAgent
+                    },
+                    body: JSON.stringify({})
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    log('✅ Test de inserción exitoso', data, 'success');
+                } else {
+                    log('❌ Error en test de inserción', data, 'error');
+                }
+                
+            } catch (error) {
+                log('❌ Error en test de inserción', error, 'error');
+            }
+        }
+        
+        // Cargar token al iniciar
+        window.onload = function() {
+            authToken = localStorage.getItem('authToken');
+            if (authToken) {
+                log('🔑 Token cargado desde localStorage', null, 'success');
+            }
+            showCurrentTime();
+        };
+    </script>
+</body>
+</html>
