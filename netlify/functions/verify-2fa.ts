@@ -167,7 +167,7 @@ export const handler: Handler = async (event) => {
           userId: user.id,
           ipAddress: getClientIP(event),
           userAgent: event.headers['user-agent'] || 'Unknown',
-          status: 'failed',
+          success: false, // failed 2FA verification
           twoFactorUsed: true
         });
         console.log('✅ Acceso 2FA fallido registrado para usuario:', user.id);
@@ -193,18 +193,18 @@ export const handler: Handler = async (event) => {
     `;
     await client.query(updateQuery, [userId]);
 
-    // Registrar acceso exitoso
+    // Registrar acceso exitoso completo con 2FA
     try {
       await logAccess(client, {
         userId: user.id,
         ipAddress: getClientIP(event),
         userAgent: event.headers['user-agent'] || 'Unknown',
-        status: 'success',
-        twoFactorUsed: true
+        success: true, // successful 2FA verification
+        twoFactorUsed: true // 2FA verificado exitosamente
       });
-      console.log('✅ Acceso 2FA exitoso registrado para usuario:', user.id);
+      console.log('✅ Acceso completo con 2FA registrado para usuario:', user.id);
     } catch (logError) {
-      console.error('❌ Error registrando acceso 2FA exitoso:', logError);
+      console.error('❌ Error registrando acceso completo 2FA:', logError);
     }
 
     // Generar token de autenticación final

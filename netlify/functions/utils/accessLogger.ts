@@ -1,10 +1,10 @@
 import { Client } from 'pg';
 
 interface AccessLogData {
-  userId: number;
+  userId: string; // UUID string
   ipAddress: string;
   userAgent: string;
-  status: 'success' | 'failed';
+  success: boolean; // boolean success instead of status string
   twoFactorUsed: boolean;
 }
 
@@ -16,7 +16,7 @@ export async function logAccess(client: Client, data: AccessLogData): Promise<vo
     console.log('📝 Logging access with data:', {
       userId: data.userId,
       ipAddress: data.ipAddress,
-      status: data.status,
+      success: data.success,
       twoFactorUsed: data.twoFactorUsed,
       device: deviceInfo.device,
       browser: deviceInfo.browser,
@@ -45,25 +45,25 @@ export async function logAccess(client: Client, data: AccessLogData): Promise<vo
       // Continuar de todas formas, la tabla podría existir
     }
 
-    // Verificar si ya existe un registro reciente (últimos 30 segundos) para evitar duplicados
+    // Verificar si ya existe un registro reciente para evitar duplicados
+    // Solo evitar duplicados si es exactamente el mismo login en los últimos 10 segundos
     try {
       const recentCheck = await client.query(`
         SELECT id FROM access_logs 
         WHERE user_id = $1 
-        AND ip_address = $2 
-        AND status = $3
-        AND login_time > NOW() - INTERVAL '30 seconds'
+        AND success = $2
+        AND login_time > NOW() - INTERVAL '10 seconds'
         ORDER BY login_time DESC 
         LIMIT 1
-      `, [data.userId, data.ipAddress, data.status]);
+      `, [data.userId, data.success]);
 
       if (recentCheck.rows.length > 0) {
-        console.log('⚠️ Skipping duplicate access log entry within 30 seconds');
+        console.log('⚠️ Skipping duplicate access log entry within 10 seconds for same user and status');
         return;
       }
     } catch (duplicateError) {
-      console.log('⚠️ No se pudo verificar duplicados (tabla nueva?):', duplicateError.message);
-      // Continuar con la inserción
+      console.log('⚠️ No se pudo verificar duplicados, continuando con inserción:', duplicateError.message);
+      // Continuar con la inserción ya que es mejor registrar que perder el registro
     }
     
     // Verificar si las columnas existen antes de insertar
@@ -75,8 +75,8 @@ export async function logAccess(client: Client, data: AccessLogData): Promise<vo
     
     const existingColumns = columns.rows.map(row => row.column_name);
     console.log('📋 Available columns in access_logs:', existingColumns);
-    
-    // Construir query dinámicamente basado en columnas existentes
+      // Construir query dinámicamente basado en columnas existentes
+    console.log('🔧 Construyendo query de inserción...');
     let insertQuery = `INSERT INTO access_logs (user_id`;
     const values: (string | number | boolean | Date)[] = [data.userId];
     let valueIndexes = '$1';
@@ -93,9 +93,9 @@ export async function logAccess(client: Client, data: AccessLogData): Promise<vo
       valueIndexes += ', $' + values.length;
     }
     
-    if (existingColumns.includes('status')) {
-      insertQuery += ', status';
-      values.push(data.status);
+    if (existingColumns.includes('success')) {
+      insertQuery += ', success';
+      values.push(data.success);
       valueIndexes += ', $' + values.length;
     }
     
@@ -117,24 +117,25 @@ export async function logAccess(client: Client, data: AccessLogData): Promise<vo
       valueIndexes += ', $' + values.length;
     }
     
-    // Si existe login_time, usarla; si no, usar created_at
+    // Agregar timestamp
     if (existingColumns.includes('login_time')) {
       insertQuery += ', login_time';
       values.push(new Date()); // Usar hora UTC del servidor
       valueIndexes += ', $' + values.length;
     }
+
+    insertQuery += `) VALUES (${valueIndexes}) RETURNING *`;
     
-    insertQuery += `) VALUES (${valueIndexes})`;
-    
-    console.log('📝 Insert query:', insertQuery);
-    console.log('📝 Insert values:', values);
+    console.log('📝 Query final:', insertQuery);
+    console.log('📝 Valores:', values);
     
     const insertResult = await client.query(insertQuery, values);
-    console.log('✅ Insert result:', insertResult);
+    console.log('✅ Resultado de inserción:', insertResult.rows[0]);
     
     console.log('✅ Access logged successfully:', { 
       userId: data.userId, 
-      status: data.status,
+      success: data.success,
+      insertedId: insertResult.rows[0]?.id,
       insertedRows: insertResult.rowCount 
     });
   } catch (error) {
@@ -142,7 +143,7 @@ export async function logAccess(client: Client, data: AccessLogData): Promise<vo
       error: error instanceof Error ? error.message : error,
       stack: error instanceof Error ? error.stack : undefined,
       userId: data.userId,
-      status: data.status
+      success: data.success
     });
     // No fallar el login por un error de logging
   }

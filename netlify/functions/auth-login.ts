@@ -97,7 +97,7 @@ export const handler: Handler = async (event) => {
           userId: user.id,
           ipAddress: getClientIP(event),
           userAgent: event.headers['user-agent'] || 'Unknown',
-          status: 'failed',
+          success: false, // failed login
           twoFactorUsed: false
         });
         console.log('✅ Acceso fallido registrado para usuario:', user.id);
@@ -124,7 +124,7 @@ export const handler: Handler = async (event) => {
           userId: user.id,
           ipAddress: getClientIP(event),
           userAgent: event.headers['user-agent'] || 'Unknown',
-          status: 'success',
+          success: true, // successful login without 2FA
           twoFactorUsed: false
         });
         console.log('✅ Acceso exitoso registrado para usuario sin 2FA:', user.id);
@@ -179,6 +179,20 @@ export const handler: Handler = async (event) => {
 
     // Si ya tiene 2FA configurado, requerir verificación
     if (hasSecret && (is2FAEnabled || !is2FAEnabled)) {
+      // Registrar acceso con credenciales válidas (pendiente de 2FA)
+      try {
+        await logAccess(client, {
+          userId: user.id,
+          ipAddress: getClientIP(event),
+          userAgent: event.headers['user-agent'] || 'Unknown',
+          success: true, // Credenciales válidas, pero pendiente 2FA
+          twoFactorUsed: false // Aún no se ha verificado 2FA
+        });
+        console.log('✅ Acceso con credenciales válidas registrado (pendiente 2FA) para usuario:', user.id);
+      } catch (logError) {
+        console.error('❌ Error registrando acceso pendiente 2FA:', logError);
+      }
+
       // Generar token temporal para verificación 2FA
       const tempToken = jwt.sign(
         { 
