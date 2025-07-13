@@ -93,22 +93,30 @@ export async function logAccess(client: Client, data: AccessLogData): Promise<vo
     // Si existe login_time, usarla; si no, usar created_at
     if (existingColumns.includes('login_time')) {
       insertQuery += ', login_time';
-      // Usar la hora actual del servidor
-      values.push(new Date());
+      values.push(new Date()); // Usar hora UTC del servidor
       valueIndexes += ', $' + values.length;
     }
     
     insertQuery += `) VALUES (${valueIndexes})`;
     
-    console.log('Insert query:', insertQuery);
-    console.log('Insert values:', values);
+    console.log('📝 Insert query:', insertQuery);
+    console.log('📝 Insert values:', values);
     
     const insertResult = await client.query(insertQuery, values);
-    console.log('Insert result:', insertResult);
+    console.log('✅ Insert result:', insertResult);
     
-    console.log('✅ Access logged successfully:', { userId: data.userId, status: data.status });
+    console.log('✅ Access logged successfully:', { 
+      userId: data.userId, 
+      status: data.status,
+      insertedRows: insertResult.rowCount 
+    });
   } catch (error) {
-    console.error('❌ Error logging access:', error);
+    console.error('❌ Error logging access:', {
+      error: error instanceof Error ? error.message : error,
+      stack: error instanceof Error ? error.stack : undefined,
+      userId: data.userId,
+      status: data.status
+    });
     // No fallar el login por un error de logging
   }
 }

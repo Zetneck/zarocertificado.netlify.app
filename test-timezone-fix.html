@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test - Corrección de Zona Horaria</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status { 
+            padding: 10px; 
+            border-radius: 4px; 
+            margin: 10px 0; 
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .timezone-info {
+            background-color: #e7f3ff;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+        }
+        .time-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin: 20px 0;
+        }
+        .time-box {
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .utc-time { background-color: #fff3cd; }
+        .mexico-time { background-color: #d4edda; }
+        .server-time { background-color: #f8d7da; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🕒 Test de Corrección de Zona Horaria</h1>
+        <p>Esta página verifica que la corrección de zona horaria para el historial de accesos funcione correctamente.</p>
+        
+        <div class="timezone-info">
+            <h3>📍 Información de Zona Horaria</h3>
+            <p><strong>Zona Objetivo:</strong> América/Mexico_City (UTC-6)</p>
+            <p><strong>Formato:</strong> es-MX con formato 24 horas</p>
+        </div>
+
+        <div class="time-comparison">
+            <div class="time-box utc-time">
+                <h4>🌍 Hora UTC</h4>
+                <div id="utc-time">--:--:--</div>
+            </div>
+            <div class="time-box mexico-time">
+                <h4>🇲🇽 Hora México</h4>
+                <div id="mexico-time">--:--:--</div>
+            </div>
+            <div class="time-box server-time">
+                <h4>💻 Hora Local</h4>
+                <div id="local-time">--:--:--</div>
+            </div>
+        </div>
+
+        <button onclick="testAccessHistory()">🔍 Probar Historial de Accesos</button>
+        <button onclick="testTimezoneConversion()">⏰ Test Conversión de Tiempo</button>
+        <button onclick="clearResults()">🗑️ Limpiar Resultados</button>
+
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Actualizar relojes cada segundo
+        function updateClocks() {
+            const now = new Date();
+            
+            // Hora UTC
+            document.getElementById('utc-time').textContent = now.toISOString().slice(11, 19);
+            
+            // Hora México
+            const mexicoTime = now.toLocaleString('es-MX', {
+                timeZone: 'America/Mexico_City',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            document.getElementById('mexico-time').textContent = mexicoTime;
+            
+            // Hora local
+            const localTime = now.toLocaleTimeString('es-MX', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+            document.getElementById('local-time').textContent = localTime;
+        }
+
+        // Probar el endpoint de historial de accesos
+        async function testAccessHistory() {
+            const token = localStorage.getItem('authToken');
+            if (!token) {
+                showResult('⚠️ No hay token de autenticación. Inicia sesión primero.', 'error');
+                return;
+            }
+
+            try {
+                showResult('🔄 Obteniendo historial de accesos...', 'info');
+                
+                const response = await fetch('/.netlify/functions/access-history', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.accessHistory) {
+                    let resultHtml = '<h3>✅ Historial de Accesos (con zona horaria corregida):</h3>';
+                    
+                    if (data.accessHistory.length === 0) {
+                        resultHtml += '<p>No hay registros de acceso disponibles.</p>';
+                    } else {
+                        resultHtml += '<div style="max-height: 300px; overflow-y: auto;">';
+                        data.accessHistory.slice(0, 5).forEach((log, index) => {
+                            resultHtml += `
+                                <div style="border: 1px solid #ddd; margin: 10px 0; padding: 10px; border-radius: 5px;">
+                                    <p><strong>Fecha:</strong> ${log.date}</p>
+                                    <p><strong>Dispositivo:</strong> ${log.device}</p>
+                                    <p><strong>IP:</strong> ${log.ip}</p>
+                                    <p><strong>Estado:</strong> ${log.status}</p>
+                                    <p><strong>2FA:</strong> ${log.twoFactorUsed ? 'Sí' : 'No'}</p>
+                                </div>
+                            `;
+                        });
+                        resultHtml += '</div>';
+                        
+                        if (data.accessHistory.length > 5) {
+                            resultHtml += `<p><em>Mostrando 5 de ${data.accessHistory.length} registros</em></p>`;
+                        }
+                    }
+                    
+                    showResult(resultHtml, 'success');
+                } else {
+                    showResult(`❌ Error: ${data.error || 'Error desconocido'}`, 'error');
+                }
+            } catch (error) {
+                showResult(`❌ Error de conexión: ${error.message}`, 'error');
+            }
+        }
+
+        // Probar conversión de zona horaria
+        function testTimezoneConversion() {
+            const now = new Date();
+            
+            // Simular lo que hace el backend
+            const mexicoTimeString = now.toLocaleString('en-US', { timeZone: 'America/Mexico_City' });
+            const mexicoDate = new Date(mexicoTimeString);
+            
+            // Simular formateo del backend
+            const formattedDate = mexicoDate.toLocaleString('es-MX', {
+                timeZone: 'America/Mexico_City',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: false
+            });
+
+            let resultHtml = '<h3>🧪 Test de Conversión de Zona Horaria:</h3>';
+            resultHtml += `<p><strong>Hora Original (UTC):</strong> ${now.toISOString()}</p>`;
+            resultHtml += `<strong>Hora Convertida (México):</strong> ${formattedDate}</p>`;
+            resultHtml += `<p><strong>Diferencia UTC:</strong> UTC-6 (México Central)</p>`;
+            
+            showResult(resultHtml, 'info');
+        }
+
+        function showResult(message, type) {
+            const resultsDiv = document.getElementById('results');
+            const resultElement = document.createElement('div');
+            resultElement.className = `status ${type}`;
+            resultElement.innerHTML = message;
+            resultsDiv.appendChild(resultElement);
+            resultsDiv.scrollTop = resultsDiv.scrollHeight;
+        }
+
+        function clearResults() {
+            document.getElementById('results').innerHTML = '';
+        }
+
+        // Inicializar
+        updateClocks();
+        setInterval(updateClocks, 1000);
+
+        // Mostrar información inicial
+        showResult('✅ Sistema de zona horaria inicializado. Zona objetivo: America/Mexico_City (UTC-6)', 'success');
+    </script>
+</body>
+</html>

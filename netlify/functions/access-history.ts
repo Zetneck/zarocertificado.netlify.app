@@ -229,8 +229,9 @@ export const handler: Handler = async (event) => {
       // Crear fecha directamente desde el timestamp de la BD
       const loginTime = new Date(row.login_time);
       
-      // Formatear fecha con la zona horaria del navegador del usuario
-      const formattedDate = loginTime.toLocaleString('es-ES', {
+      // Formatear fecha con la zona horaria de México (UTC-6)
+      const formattedDate = loginTime.toLocaleString('es-MX', {
+        timeZone: 'America/Mexico_City',
         year: 'numeric',
         month: 'long',
         day: 'numeric',

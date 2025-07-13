@@ -147,9 +147,13 @@ export function AccessHistory({ open, onClose }: AccessHistoryProps) {
   };
 
   const formatRelativeTime = (timestamp: string) => {
+    // Obtener la hora actual en zona horaria de México
     const now = new Date();
+    const mexicoNow = new Date(now.toLocaleString('en-US', { timeZone: 'America/Mexico_City' }));
+    
+    // La fecha del access log ya viene formateada en zona horaria de México desde el backend
     const accessTime = new Date(timestamp);
-    const diffMs = now.getTime() - accessTime.getTime();
+    const diffMs = mexicoNow.getTime() - accessTime.getTime();
     const diffMinutes = Math.floor(diffMs / (1000 * 60));
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -161,7 +165,7 @@ export function AccessHistory({ open, onClose }: AccessHistoryProps) {
     } else if (diffDays < 30) {
       return diffDays === 1 ? 'Hace 1 día' : `Hace ${diffDays} días`;
     } else {
-      return accessTime.toLocaleDateString('es-ES');
+      return accessTime.toLocaleDateString('es-MX', { timeZone: 'America/Mexico_City' });
     }
   };
 

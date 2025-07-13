@@ -92,13 +92,18 @@ export const handler: Handler = async (event) => {
     
     if (!validPassword) {
       // Registrar acceso fallido
-      await logAccess(client, {
-        userId: user.id,
-        ipAddress: getClientIP(event),
-        userAgent: event.headers['user-agent'] || 'Unknown',
-        status: 'failed',
-        twoFactorUsed: false
-      });
+      try {
+        await logAccess(client, {
+          userId: user.id,
+          ipAddress: getClientIP(event),
+          userAgent: event.headers['user-agent'] || 'Unknown',
+          status: 'failed',
+          twoFactorUsed: false
+        });
+        console.log('✅ Acceso fallido registrado para usuario:', user.id);
+      } catch (logError) {
+        console.error('❌ Error registrando acceso fallido:', logError);
+      }
       
       return {
         statusCode: 401,
@@ -114,13 +119,18 @@ export const handler: Handler = async (event) => {
     // Si el usuario NO tiene secret configurado (usuario nuevo)
     if (!hasSecret) {
       // Registrar acceso exitoso - usuario sin 2FA
-      await logAccess(client, {
-        userId: user.id,
-        ipAddress: getClientIP(event),
-        userAgent: event.headers['user-agent'] || 'Unknown',
-        status: 'success',
-        twoFactorUsed: false
-      });
+      try {
+        await logAccess(client, {
+          userId: user.id,
+          ipAddress: getClientIP(event),
+          userAgent: event.headers['user-agent'] || 'Unknown',
+          status: 'success',
+          twoFactorUsed: false
+        });
+        console.log('✅ Acceso exitoso registrado para usuario sin 2FA:', user.id);
+      } catch (logError) {
+        console.error('❌ Error registrando acceso exitoso:', logError);
+      }
       
       // Generar token temporal para acceso a configuración
       const tempToken = jwt.sign(

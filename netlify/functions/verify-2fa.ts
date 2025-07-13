@@ -162,13 +162,18 @@ export const handler: Handler = async (event) => {
 
     if (!isValidCode) {
       // Registrar acceso fallido por código 2FA incorrecto
-      await logAccess(client, {
-        userId: user.id,
-        ipAddress: getClientIP(event),
-        userAgent: event.headers['user-agent'] || 'Unknown',
-        status: 'failed',
-        twoFactorUsed: true
-      });
+      try {
+        await logAccess(client, {
+          userId: user.id,
+          ipAddress: getClientIP(event),
+          userAgent: event.headers['user-agent'] || 'Unknown',
+          status: 'failed',
+          twoFactorUsed: true
+        });
+        console.log('✅ Acceso 2FA fallido registrado para usuario:', user.id);
+      } catch (logError) {
+        console.error('❌ Error registrando acceso 2FA fallido:', logError);
+      }
       
       return {
         statusCode: 400,
@@ -189,13 +194,18 @@ export const handler: Handler = async (event) => {
     await client.query(updateQuery, [userId]);
 
     // Registrar acceso exitoso
-    await logAccess(client, {
-      userId: user.id,
-      ipAddress: getClientIP(event),
-      userAgent: event.headers['user-agent'] || 'Unknown',
-      status: 'success',
-      twoFactorUsed: true
-    });
+    try {
+      await logAccess(client, {
+        userId: user.id,
+        ipAddress: getClientIP(event),
+        userAgent: event.headers['user-agent'] || 'Unknown',
+        status: 'success',
+        twoFactorUsed: true
+      });
+      console.log('✅ Acceso 2FA exitoso registrado para usuario:', user.id);
+    } catch (logError) {
+      console.error('❌ Error registrando acceso 2FA exitoso:', logError);
+    }
 
     // Generar token de autenticación final
     const authToken = jwt.sign(
