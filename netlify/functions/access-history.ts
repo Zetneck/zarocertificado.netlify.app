@@ -89,145 +89,73 @@ export const handler: Handler = async (event) => {
     await client.connect();
 
     // Obtener historial de accesos del usuario
-    // Primero verificar si la tabla existe y tiene la estructura correcta
-    try {
-      // Intentar crear la tabla con la estructura completa
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS access_logs (
-          id SERIAL PRIMARY KEY,
-          user_id INTEGER REFERENCES users(id),
-          login_time TIMESTAMP DEFAULT NOW(),
-          ip_address VARCHAR(45),
-          user_agent TEXT,
-          device_type VARCHAR(100),
-          browser VARCHAR(100),
-          status VARCHAR(20) DEFAULT 'success',
-          two_factor_used BOOLEAN DEFAULT false,
-          created_at TIMESTAMP DEFAULT NOW()
-        )
-      `);
-      
-      // Verificar y agregar columnas faltantes si es necesario
-      const columns = await client.query(`
-        SELECT column_name 
-        FROM information_schema.columns 
-        WHERE table_name = 'access_logs'
-      `);
-      
-      const existingColumns = columns.rows.map(row => row.column_name);
-      
-      // Agregar columnas faltantes una por una
-      if (!existingColumns.includes('login_time')) {
-        await client.query(`ALTER TABLE access_logs ADD COLUMN login_time TIMESTAMP DEFAULT NOW()`);
-        console.log('✅ Agregada columna login_time');
-      }
-      if (!existingColumns.includes('device_type')) {
-        await client.query(`ALTER TABLE access_logs ADD COLUMN device_type VARCHAR(100)`);
-        console.log('✅ Agregada columna device_type');
-      }
-      if (!existingColumns.includes('browser')) {
-        await client.query(`ALTER TABLE access_logs ADD COLUMN browser VARCHAR(100)`);
-        console.log('✅ Agregada columna browser');
-      }
-      if (!existingColumns.includes('status')) {
-        await client.query(`ALTER TABLE access_logs ADD COLUMN status VARCHAR(20) DEFAULT 'success'`);
-        console.log('✅ Agregada columna status');
-      }
-      if (!existingColumns.includes('two_factor_used')) {
-        await client.query(`ALTER TABLE access_logs ADD COLUMN two_factor_used BOOLEAN DEFAULT false`);
-        console.log('✅ Agregada columna two_factor_used');
-      }
-      if (!existingColumns.includes('ip_address')) {
-        await client.query(`ALTER TABLE access_logs ADD COLUMN ip_address VARCHAR(45)`);
-        console.log('✅ Agregada columna ip_address');
-      }
-      if (!existingColumns.includes('user_agent')) {
-        await client.query(`ALTER TABLE access_logs ADD COLUMN user_agent TEXT`);
-        console.log('✅ Agregada columna user_agent');
-      }
-      
-    } catch (schemaError) {
-      console.error('Error configurando tabla access_logs:', schemaError);
-    }
-
-    // Volver a obtener las columnas después de la migración
-    const finalColumns = await client.query(`
+    // La tabla access_logs ya existe con la estructura correcta
+    console.log('🔍 Obteniendo historial para usuario:', decoded.userId);
+    
+    // Verificar columnas disponibles en la tabla real
+    const columns = await client.query(`
       SELECT column_name 
       FROM information_schema.columns 
       WHERE table_name = 'access_logs'
     `);
     
-    const availableColumns = finalColumns.rows.map(row => row.column_name);
+    const availableColumns = columns.rows.map(row => row.column_name);
+    console.log('📋 Columnas disponibles:', availableColumns);
     
-    // Construir SELECT dinámicamente
-    const selectColumns: string[] = [];
+    // Construir SELECT para la estructura real de la tabla
+    let selectColumns = `
+      id,
+      user_id,
+      ip_address,
+      user_agent,
+      device_type,
+      browser,
+      two_factor_used,
+      created_at,
+      login_time
+    `;
     
-    if (availableColumns.includes('login_time')) {
-      selectColumns.push('login_time');
-    } else if (availableColumns.includes('created_at')) {
-      selectColumns.push('created_at as login_time');
-    } else {
-      selectColumns.push('NOW() as login_time');
-    }
-    
-    if (availableColumns.includes('ip_address')) {
-      selectColumns.push('ip_address');
-    } else {
-      selectColumns.push("'Unknown' as ip_address");
-    }
-    
-    if (availableColumns.includes('user_agent')) {
-      selectColumns.push('user_agent');
-    } else {
-      selectColumns.push("'Unknown' as user_agent");
-    }
-    
-    if (availableColumns.includes('device_type')) {
-      selectColumns.push('device_type');
-    } else {
-      selectColumns.push("'Desktop' as device_type");
-    }
-    
-    if (availableColumns.includes('browser')) {
-      selectColumns.push('browser');
-    } else {
-      selectColumns.push("'Unknown' as browser");
-    }
-    
-    // Verificar si existe 'status' o 'success'
-    if (availableColumns.includes('status')) {
-      selectColumns.push('status');
-    } else if (availableColumns.includes('success')) {
-      selectColumns.push("CASE WHEN success = true THEN 'success' ELSE 'failed' END as status");
-    } else {
-      selectColumns.push("'success' as status");
-    }
-    
-    if (availableColumns.includes('two_factor_used')) {
-      selectColumns.push('two_factor_used');
-    } else {
-      selectColumns.push('false as two_factor_used');
+    // Manejar la columna success/status
+    if (availableColumns.includes('success')) {
+      selectColumns += `, CASE WHEN success = true THEN 'success' ELSE 'failed' END as status`;
+    } else if (availableColumns.includes('status')) {
+      selectColumns += `, status`;
     }
 
     // Obtener los últimos 50 accesos del usuario
     const query = `
-      SELECT DISTINCT ${selectColumns.join(', ')}
+      SELECT ${selectColumns}
       FROM access_logs 
       WHERE user_id = $1 
-      ORDER BY ${availableColumns.includes('login_time') ? 'login_time' : availableColumns.includes('created_at') ? 'created_at' : 'id'} DESC 
+      ORDER BY COALESCE(login_time, created_at) DESC 
       LIMIT 50
     `;
     
-    console.log('Executing query:', query);
-    console.log('For user ID:', decoded.userId);
+    console.log('📝 Query ejecutando:', query);
+    console.log('📝 Para usuario:', decoded.userId);
     
     const result = await client.query(query, [decoded.userId]);
-    console.log('Raw DB results:', result.rows);
+    console.log(`✅ Encontrados ${result.rows.length} registros de acceso`);
+    console.log('🔍 Primeros registros:', result.rows.slice(0, 3));
+    
+    if (result.rows.length === 0) {
+      console.log('⚠️ No se encontraron registros de acceso para el usuario');
+      return {
+        statusCode: 200,
+        headers,
+        body: JSON.stringify({
+          success: true,
+          data: [],
+          total: 0,
+          message: 'No hay registros de acceso'
+        })
+      };
+    }
 
-    // Formatear los datos para el frontend
+    // Procesar cada registro
     const accessHistory = result.rows.map((row, index) => {
-      // Crear fecha directamente desde el timestamp de la BD
-      const loginTime = new Date(row.login_time);
+      // Usar login_time si está disponible, si no usar created_at
+      const loginTime = new Date(row.login_time || row.created_at);
       
       // Formatear fecha con la zona horaria de México (UTC-6)
       const formattedDate = loginTime.toLocaleString('es-MX', {
@@ -238,14 +166,16 @@ export const handler: Handler = async (event) => {
         hour: '2-digit',
         minute: '2-digit',
         second: '2-digit',
-        hour12: false // Usar formato 24 horas
+        hour12: false
       });
-      
-      const ipFormatted = row.ip_address === '::1' || row.ip_address === '127.0.0.1' 
-        ? '127.0.0.1 (Local)' 
-        : row.ip_address || 'IP desconocida';
-      
-      // Mejorar la combinación de dispositivo y navegador
+
+      // Formatear IP de manera amigable
+      let ipFormatted = row.ip_address || 'IP desconocida';
+      if (ipFormatted.includes('127.0.0.1') || ipFormatted.includes('::1')) {
+        ipFormatted += ' (Local)';
+      }
+
+      // Obtener información del dispositivo
       let deviceDisplay = 'Dispositivo desconocido';
       if (row.device_type && row.browser) {
         deviceDisplay = `${row.device_type} • ${row.browser}`;
@@ -259,14 +189,14 @@ export const handler: Handler = async (event) => {
       }
       
       return {
-        id: `${row.login_time}_${index}`, // ID único para evitar duplicados
+        id: `${row.login_time || row.created_at}_${index}`, // ID único para evitar duplicados
         date: formattedDate,
         ip: ipFormatted,
         device: deviceDisplay,
         userAgent: row.user_agent || 'User agent desconocido',
         status: row.status === 'success' ? 'Exitoso' : 'Fallido',
         twoFactorUsed: Boolean(row.two_factor_used),
-        timestamp: row.login_time,
+        timestamp: row.login_time || row.created_at,
         rawData: row // Para debugging
       };
     });
