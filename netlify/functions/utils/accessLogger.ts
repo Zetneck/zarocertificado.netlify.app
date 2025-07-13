@@ -9,6 +9,8 @@ interface AccessLogData {
 }
 
 export async function logAccess(client: Client, data: AccessLogData): Promise<void> {
+  console.log('🚀 INICIO logAccess con datos:', JSON.stringify(data, null, 2));
+  
   try {
     // Detectar tipo de dispositivo y navegador
     const deviceInfo = parseUserAgent(data.userAgent);
@@ -23,50 +25,43 @@ export async function logAccess(client: Client, data: AccessLogData): Promise<vo
       userAgent: data.userAgent
     });
 
-    // Asegurar que la tabla access_logs existe
+    // La tabla access_logs ya existe con la estructura correcta
+    // No necesitamos crearla, solo verificar que podemos acceder
     try {
-      await client.query(`
-        CREATE TABLE IF NOT EXISTS access_logs (
-          id SERIAL PRIMARY KEY,
-          user_id INTEGER REFERENCES users(id),
-          login_time TIMESTAMP DEFAULT NOW(),
-          ip_address VARCHAR(45),
-          user_agent TEXT,
-          device_type VARCHAR(100),
-          browser VARCHAR(100),
-          status VARCHAR(20) DEFAULT 'success',
-          two_factor_used BOOLEAN DEFAULT false,
-          created_at TIMESTAMP DEFAULT NOW()
-        )
-      `);
-      console.log('✅ Tabla access_logs verificada/creada');
+      await client.query(`SELECT 1 FROM access_logs LIMIT 1`);
+      console.log('✅ Tabla access_logs verificada');
     } catch (tableError) {
-      console.error('⚠️ Error creando tabla access_logs:', tableError);
-      // Continuar de todas formas, la tabla podría existir
+      console.error('⚠️ Error verificando tabla access_logs:', tableError);
+      // La tabla podría no existir o tener permisos incorrectos
     }
 
-    // Verificar si ya existe un registro reciente para evitar duplicados
-    // Solo evitar duplicados si es exactamente el mismo login en los últimos 10 segundos
-    try {
-      const recentCheck = await client.query(`
-        SELECT id FROM access_logs 
-        WHERE user_id = $1 
-        AND success = $2
-        AND login_time > NOW() - INTERVAL '10 seconds'
-        ORDER BY login_time DESC 
-        LIMIT 1
-      `, [data.userId, data.success]);
+    // Verificar duplicados solo para logins exitosos muy recientes (5 segundos)
+    // Para logins fallidos, siempre registrar
+    if (data.success) {
+      try {
+        const recentCheck = await client.query(`
+          SELECT id FROM access_logs 
+          WHERE user_id = $1 
+          AND success = true
+          AND login_time > NOW() - INTERVAL '5 seconds'
+          ORDER BY login_time DESC 
+          LIMIT 1
+        `, [data.userId]);
 
-      if (recentCheck.rows.length > 0) {
-        console.log('⚠️ Skipping duplicate access log entry within 10 seconds for same user and status');
-        return;
+        if (recentCheck.rows.length > 0) {
+          console.log('⚠️ Skipping duplicate successful login within 5 seconds for user:', data.userId);
+          return;
+        }
+      } catch (duplicateError) {
+        console.log('⚠️ No se pudo verificar duplicados, continuando con inserción:', duplicateError.message);
+        // Continuar con la inserción ya que es mejor registrar que perder el registro
       }
-    } catch (duplicateError) {
-      console.log('⚠️ No se pudo verificar duplicados, continuando con inserción:', duplicateError.message);
-      // Continuar con la inserción ya que es mejor registrar que perder el registro
+    } else {
+      console.log('📝 Registrando login fallido (sin verificar duplicados)');
     }
     
     // Verificar si las columnas existen antes de insertar
+    console.log('🔍 Verificando columnas de la tabla...');
     const columns = await client.query(`
       SELECT column_name 
       FROM information_schema.columns 
@@ -75,6 +70,10 @@ export async function logAccess(client: Client, data: AccessLogData): Promise<vo
     
     const existingColumns = columns.rows.map(row => row.column_name);
     console.log('📋 Available columns in access_logs:', existingColumns);
+    
+    if (existingColumns.length === 0) {
+      throw new Error('La tabla access_logs no existe o no tiene columnas');
+    }
       // Construir query dinámicamente basado en columnas existentes
     console.log('🔧 Construyendo query de inserción...');
     let insertQuery = `INSERT INTO access_logs (user_id`;
@@ -128,9 +127,12 @@ export async function logAccess(client: Client, data: AccessLogData): Promise<vo
     
     console.log('📝 Query final:', insertQuery);
     console.log('📝 Valores:', values);
+    console.log('📝 Tipos de valores:', values.map(v => typeof v));
     
+    console.log('⚡ Ejecutando inserción...');
     const insertResult = await client.query(insertQuery, values);
     console.log('✅ Resultado de inserción:', insertResult.rows[0]);
+    console.log('📊 Filas afectadas:', insertResult.rowCount);
     
     console.log('✅ Access logged successfully:', { 
       userId: data.userId, 
