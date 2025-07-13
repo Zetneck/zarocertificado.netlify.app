@@ -13,7 +13,7 @@ export async function logAccess(client: Client, data: AccessLogData): Promise<vo
     // Detectar tipo de dispositivo y navegador
     const deviceInfo = parseUserAgent(data.userAgent);
     
-    console.log('Logging access with data:', {
+    console.log('📝 Logging access with data:', {
       userId: data.userId,
       ipAddress: data.ipAddress,
       status: data.status,
@@ -23,20 +23,47 @@ export async function logAccess(client: Client, data: AccessLogData): Promise<vo
       userAgent: data.userAgent
     });
 
-    // Verificar si ya existe un registro reciente (últimos 30 segundos) para evitar duplicados
-    const recentCheck = await client.query(`
-      SELECT id FROM access_logs 
-      WHERE user_id = $1 
-      AND ip_address = $2 
-      AND status = $3
-      AND login_time > NOW() - INTERVAL '30 seconds'
-      ORDER BY login_time DESC 
-      LIMIT 1
-    `, [data.userId, data.ipAddress, data.status]);
+    // Asegurar que la tabla access_logs existe
+    try {
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS access_logs (
+          id SERIAL PRIMARY KEY,
+          user_id INTEGER REFERENCES users(id),
+          login_time TIMESTAMP DEFAULT NOW(),
+          ip_address VARCHAR(45),
+          user_agent TEXT,
+          device_type VARCHAR(100),
+          browser VARCHAR(100),
+          status VARCHAR(20) DEFAULT 'success',
+          two_factor_used BOOLEAN DEFAULT false,
+          created_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+      console.log('✅ Tabla access_logs verificada/creada');
+    } catch (tableError) {
+      console.error('⚠️ Error creando tabla access_logs:', tableError);
+      // Continuar de todas formas, la tabla podría existir
+    }
 
-    if (recentCheck.rows.length > 0) {
-      console.log('⚠️ Skipping duplicate access log entry within 30 seconds');
-      return;
+    // Verificar si ya existe un registro reciente (últimos 30 segundos) para evitar duplicados
+    try {
+      const recentCheck = await client.query(`
+        SELECT id FROM access_logs 
+        WHERE user_id = $1 
+        AND ip_address = $2 
+        AND status = $3
+        AND login_time > NOW() - INTERVAL '30 seconds'
+        ORDER BY login_time DESC 
+        LIMIT 1
+      `, [data.userId, data.ipAddress, data.status]);
+
+      if (recentCheck.rows.length > 0) {
+        console.log('⚠️ Skipping duplicate access log entry within 30 seconds');
+        return;
+      }
+    } catch (duplicateError) {
+      console.log('⚠️ No se pudo verificar duplicados (tabla nueva?):', duplicateError.message);
+      // Continuar con la inserción
     }
     
     // Verificar si las columnas existen antes de insertar
@@ -47,7 +74,7 @@ export async function logAccess(client: Client, data: AccessLogData): Promise<vo
     `);
     
     const existingColumns = columns.rows.map(row => row.column_name);
-    console.log('Available columns in access_logs:', existingColumns);
+    console.log('📋 Available columns in access_logs:', existingColumns);
     
     // Construir query dinámicamente basado en columnas existentes
     let insertQuery = `INSERT INTO access_logs (user_id`;
