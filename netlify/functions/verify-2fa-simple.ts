@@ -103,7 +103,6 @@ export const handler: Handler = async (event) => {
       role: decodedToken.role,
       phone: null,
       department: null,
-      credits: 1000,
       twoFactorEnabled: true,
       settings: {},
       createdAt: new Date().toISOString(),

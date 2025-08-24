@@ -54,34 +54,36 @@ export const handler: Handler = async (event) => {
     );
 
     if (result.rows.length === 0) {
-      // Intentar registrar acceso fallido (sin user id)
+      // Intentar registrar acceso fallido (sin user id) con columnas consistentes
       try {
         await client.query(`
           INSERT INTO access_logs (
-            user_id, 
-            ip_address, 
-            user_agent, 
-            device_type, 
-            browser, 
-            status, 
-            two_factor_used
-          ) VALUES (NULL, $1, $2, $3, $4, $5, $6)
+            user_id,
+            ip_address,
+            user_agent,
+            success,
+            two_factor_used,
+            device_type,
+            browser,
+            login_time
+          ) VALUES (NULL, $1, $2, $3, $4, $5, $6, NOW())
         `, [
           getClientIP(event),
           event.headers['user-agent'] || 'Unknown',
+          false, // success
+          false, // two_factor_used
           'Unknown',
-          'Unknown',
-          'failed',
-          false
+          'Unknown'
         ]);
       } catch (logError) {
-        console.error('Error logging failed access:', logError);
+        console.error('Error logging failed access (user not found):', logError);
       }
-      
+
+      // Responder con mensaje claro para el frontend
       return {
         statusCode: 401,
         headers,
-        body: JSON.stringify({ error: 'Credenciales incorrectas' })
+        body: JSON.stringify({ error: 'EMAIL_NOT_FOUND', message: 'El correo no existe' })
       };
     }
 
@@ -104,11 +106,11 @@ export const handler: Handler = async (event) => {
       } catch (logError) {
         console.error('❌ Error registrando acceso fallido:', logError);
       }
-      
+
       return {
         statusCode: 401,
         headers,
-        body: JSON.stringify({ error: 'Credenciales incorrectas' })
+        body: JSON.stringify({ error: 'INVALID_PASSWORD', message: 'La contraseña es incorrecta' })
       };
     }
 

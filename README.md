@@ -12,7 +12,8 @@ Aplicación web moderna para la generación de certificados de fumigación con a
 
 ### ✅ Gestión de Usuarios
 - **Panel de Administración**: Solo accesible para administradores
-- **Gestión de Créditos**: Asignación y modificación de créditos por usuario
+  
+  Nota: El sistema de créditos fue eliminado. Ya no se asignan ni muestran créditos a usuarios.
 - **Perfiles de Usuario**: Información completa del usuario
 - **Configuración Personal**: Preferencias y configuraciones
 
@@ -108,7 +109,7 @@ npm run dev
 - Funciones:
   - Ver todos los usuarios
   - Crear nuevos usuarios
-  - Modificar créditos
+  - (Eliminado) Modificar créditos
   - Eliminar usuarios
   - Ver estadísticas
 
@@ -121,7 +122,7 @@ Usuario: user@test.com / user123
 ## 🔧 Estructura de Base de Datos
 
 ### Tablas Principales
-- **users**: Información de usuarios, roles, créditos
+- **users**: Información de usuarios, roles
 - **access_logs**: Historial de accesos (seguridad)
 - **certificate_usage**: Tracking de certificados generados
 
@@ -134,7 +135,19 @@ npm run preview    # Preview del build
 npm run lint       # Análisis de código
 ```
 
-## 🔐 Seguridad
+## �️ Migración recomendada (eliminar créditos en BD)
+
+Si tu base ya tiene la columna `credits` en `users`, aplica la migración para mantener la coherencia con el código:
+
+- Archivo SQL: `migrations/2025-08-24_drop_credits.sql`
+
+Cómo aplicarla:
+- Neon SQL Editor: abre el archivo, copia y ejecuta.
+- O usa un cliente psql con tu `DATABASE_URL`.
+
+La aplicación ya no usa `credits`, por lo que esta migración es segura.
+
+## �🔐 Seguridad
 
 - Autenticación JWT con expiración
 - Validación de roles en frontend y backend

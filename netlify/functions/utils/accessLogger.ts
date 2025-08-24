@@ -214,19 +214,28 @@ function parseUserAgent(userAgent: string): { device: string; browser: string } 
 }
 
 export function getClientIP(event: { headers: { [key: string]: string | undefined }; clientContext?: { ip?: string } }): string {
-  // Netlify Functions headers
-  const ip = (event.headers['x-forwarded-for'] ||
-         event.headers['x-real-ip'] ||
-         event.headers['x-client-ip'] ||
-         event.clientContext?.ip ||
-         'Unknown') as string;
-         
-  // Si es una IP local de desarrollo, hacer más amigable
-  if (ip === '::1') {
-    return '127.0.0.1 (Desarrollo local)';
-  } else if (ip === '127.0.0.1') {
-    return '127.0.0.1 (Desarrollo local)';
+  // Obtener posibles fuentes
+  let raw = (event.headers['x-forwarded-for'] ||
+             event.headers['x-real-ip'] ||
+             event.headers['x-client-ip'] ||
+             event.clientContext?.ip ||
+             '') as string;
+
+  // x-forwarded-for puede contener una lista "client, proxy1, proxy2" → tomar la primera
+  if (raw.includes(',')) {
+    raw = raw.split(',')[0].trim();
   }
-  
-  return ip;
+
+  // Remover posibles puertos (1.2.3.4:5678)
+  if (raw.includes(':') && !raw.includes('::')) {
+    // IPv4 con puerto
+    raw = raw.split(':')[0];
+  }
+
+  // Normalizar localhost
+  if (raw === '::1' || raw === '' || raw.toLowerCase() === 'localhost') {
+    return '127.0.0.1';
+  }
+
+  return raw;
 }

@@ -42,24 +42,21 @@ Una vez configurada la BD, puedes usar:
 **Administrador:**
 - Email: `admin@zaro.com`
 - Password: `admin123`
-- Créditos: 1000
 
 **Usuario normal:**
 - Email: `user@zaro.com` 
 - Password: `user123`
-- Créditos: 25
 
 **Operador:**
 - Email: `operator@zaro.com`
 - Password: `operator123`  
-- Créditos: 50
 
 ## 🎉 ¡Beneficios!
 
 ✅ **Usuarios reales** - No más demo mode
 ✅ **Autenticación segura** - JWT + bcrypt
 ✅ **Persistencia** - Los datos no se pierden
-✅ **Sistema de créditos** - Control real de uso
+> Nota: El sistema de créditos fue eliminado del proyecto; omite cualquier referencia a créditos.
 ✅ **Tracking** - Registro de certificados generados
 ✅ **Multi-dispositivo** - Acceso desde cualquier lugar
 ✅ **Escalable** - Preparado para muchos usuarios
@@ -68,7 +65,7 @@ Una vez configurada la BD, puedes usar:
 
 - ✅ Login/logout real
 - ✅ Gestión de perfil de usuario
-- ✅ Sistema de créditos
+
 - ✅ Tracking de certificados
 - ✅ Logging de accesos
 - ✅ Configuración de usuario

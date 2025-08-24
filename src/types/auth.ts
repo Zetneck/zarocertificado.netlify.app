@@ -9,7 +9,6 @@ export interface User {
   twoFactorSecret?: string;
   createdAt: Date;
   lastLogin?: Date;
-  credits?: number;
   settings?: UserSettings;
 }
 

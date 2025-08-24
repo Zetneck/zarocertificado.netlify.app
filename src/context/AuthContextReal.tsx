@@ -13,7 +13,6 @@ interface User {
   role: 'admin' | 'user' | 'operator';
   phone?: string;
   department?: string;
-  credits: number;
   twoFactorEnabled: boolean;
   settings?: UserSettings;
   createdAt: string;
@@ -376,6 +375,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setLoading(true);
     
     try {
+  // Reiniciar cualquier estado/tokens previos para un login limpio
+  localStorage.removeItem('authToken');
+  localStorage.removeItem('user');
+  localStorage.removeItem('tempToken');
+  localStorage.removeItem('tempUser');
+  setIsAuthenticated(false);
+  setUser(null);
+  setRequiresTwoFactor(false);
+  setRequiresSetup2FA(false);
+  setTempUser(null);
+
       console.log('🔄 Intentando login:', { email });
       
       const response = await fetch(`${API_BASE}/auth-login`, {
@@ -384,7 +394,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+  const data = await response.json();
       
       console.log('📡 Respuesta del servidor:', { 
         ok: response.ok, 
@@ -395,7 +405,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!response.ok) {
         // CRÍTICO: Poner loading en false INMEDIATAMENTE antes del error
         setLoading(false);
-        throw new Error(data.error || 'Error de autenticación');
+        // Normalizar códigos específicos del backend
+        const backendError = (data?.error || '').toString();
+        const message =
+          backendError === 'EMAIL_NOT_FOUND' ? 'El correo no existe' :
+          backendError === 'INVALID_PASSWORD' ? 'La contraseña es incorrecta' :
+          data?.message || data?.error || 'Error de autenticación';
+        throw new Error(message);
       }
 
       // CASO 1: Usuario nuevo que necesita configurar 2FA
@@ -530,7 +546,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(error.error || 'Error al registrar certificado');
       }
 
-      // Refrescar usuario para actualizar créditos
+  // Refrescar usuario (sin gestión de créditos)
       await refreshUser();
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Error al registrar certificado';

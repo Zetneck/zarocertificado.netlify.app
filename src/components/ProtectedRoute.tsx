@@ -19,8 +19,8 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
 
   const theme = mode === 'light' ? lightTheme : darkTheme;
 
-  // Mostrar loading mientras se inicializa
-  if (loading) {
+  // Mostrar loading solo cuando hay sesión/proceso activo para evitar ocultar el Login en intentos fallidos
+  if (loading && (isAuthenticated || user || requiresTwoFactor || requiresSetup2FA)) {
     return (
       <ThemeProvider theme={theme}>
         <Box

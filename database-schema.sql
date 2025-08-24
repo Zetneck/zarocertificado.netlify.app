@@ -12,7 +12,6 @@ CREATE TABLE users (
   two_factor_secret VARCHAR(255),
   phone VARCHAR(20),
   department VARCHAR(100),
-  credits INTEGER DEFAULT 10,
   settings JSONB DEFAULT '{"emailNotifications": true, "smsNotifications": false, "autoSave": true}',
   created_at TIMESTAMP DEFAULT NOW(),
   last_login TIMESTAMP,
@@ -58,10 +57,10 @@ CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users
     FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 
 -- Insertar usuarios de prueba
-INSERT INTO users (email, name, password_hash, role, credits, phone, department) VALUES 
+INSERT INTO users (email, name, password_hash, role, phone, department) VALUES 
 -- Contraseña: admin123
-('admin@zaro.com', 'Administrador Zaro', '$2a$10$rZaF7YGVcKzGFJq8Q2RHO.WX3zQvQK1qYmQ8kH6LXpJ4vB3nR2T8m', 'admin', 1000, '+52 555 000 0001', 'Administración'),
+('admin@zaro.com', 'Administrador Zaro', '$2a$10$rZaF7YGVcKzGFJq8Q2RHO.WX3zQvQK1qYmQ8kH6LXpJ4vB3nR2T8m', 'admin', '+52 555 000 0001', 'Administración'),
 -- Contraseña: user123  
-('user@zaro.com', 'Usuario Demo', '$2a$10$rZaF7YGVcKzGFJq8Q2RHO.WX3zQvQK1qYmQ8kH6LXpJ4vB3nR2T8m', 'user', 25, '+52 555 123 4567', 'Operaciones'),
+('user@zaro.com', 'Usuario Demo', '$2a$10$rZaF7YGVcKzGFJq8Q2RHO.WX3zQvQK1qYmQ8kH6LXpJ4vB3nR2T8m', 'user', '+52 555 123 4567', 'Operaciones'),
 -- Contraseña: operator123
-('operator@zaro.com', 'Operador Demo', '$2a$10$rZaF7YGVcKzGFJq8Q2RHO.WX3zQvQK1qYmQ8kH6LXpJ4vB3nR2T8m', 'operator', 50, '+52 555 987 6543', 'Logística');
+('operator@zaro.com', 'Operador Demo', '$2a$10$rZaF7YGVcKzGFJq8Q2RHO.WX3zQvQK1qYmQ8kH6LXpJ4vB3nR2T8m', 'operator', '+52 555 987 6543', 'Logística');

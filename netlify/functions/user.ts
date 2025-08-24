@@ -72,7 +72,7 @@ export const handler: Handler = async (event) => {
     if (event.httpMethod === 'GET') {
       // Obtener perfil del usuario actual
       const result = await client.query(
-        'SELECT id, email, name, role, phone, department, credits, two_factor_enabled, settings, created_at, last_login FROM users WHERE id = $1',
+        'SELECT id, email, name, role, phone, department, two_factor_enabled, settings, created_at, last_login FROM users WHERE id = $1',
         [decoded.id]
       );
 
@@ -95,7 +95,6 @@ export const handler: Handler = async (event) => {
         role: user.role,
         phone: user.phone,
         department: user.department,
-        credits: user.credits,
         twoFactorEnabled: user.two_factor_enabled, // Mapeo correcto
         settings: user.settings,
         createdAt: user.created_at,
@@ -112,7 +111,7 @@ export const handler: Handler = async (event) => {
       // Actualizar perfil del usuario
       const updateData = JSON.parse(event.body || '{}');
       
-      const allowedFields = ['name', 'phone', 'department', 'settings'];
+  const allowedFields = ['name', 'phone', 'department', 'settings'];
       const updates: string[] = [];
       const values: (string | number | object)[] = [];
       let paramCount = 1;
@@ -142,7 +141,7 @@ export const handler: Handler = async (event) => {
       updates.push(`updated_at = NOW()`);
       values.push(decoded.id);
 
-      const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING id, email, name, role, phone, department, credits, two_factor_enabled, settings, created_at, last_login`;
+  const query = `UPDATE users SET ${updates.join(', ')} WHERE id = $${paramCount} RETURNING id, email, name, role, phone, department, two_factor_enabled, settings, created_at, last_login`;
       
       const result = await client.query(query, values);
 

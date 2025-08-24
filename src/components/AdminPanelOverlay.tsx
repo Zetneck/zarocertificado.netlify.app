@@ -25,7 +25,10 @@ import {
   CircularProgress,
   Menu,
   ListItemIcon,
-  ListItemText
+  ListItemText,
+  List,
+  ListItem,
+  Divider,
 } from '@mui/material';
 import {
   Add as AddIcon,
@@ -33,7 +36,12 @@ import {
   DeleteForever as DeleteForeverIcon,
   Refresh as RefreshIcon,
   ArrowBack as ArrowBackIcon,
-  MoreVert as MoreVertIcon
+  MoreVert as MoreVertIcon,
+  Visibility as VisibilityIcon,
+  VisibilityOff as VisibilityOffIcon,
+  Key as KeyIcon,
+  ContentCopy as ContentCopyIcon,
+  DeleteSweep as DeleteSweepIcon
 } from '@mui/icons-material';
 import { useAuthReal } from '../hooks/useAuthReal';
 
@@ -42,7 +50,6 @@ interface User {
   email: string;
   name: string;
   role: string;
-  credits: number;
   phone?: string;
   department?: string;
   two_factor_enabled: boolean;
@@ -56,7 +63,6 @@ interface NewUser {
   name: string;
   password: string;
   role: string;
-  credits: number;
   phone: string;
   department: string;
 }
@@ -73,15 +79,26 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
   const [success, setSuccess] = useState('');
   const [openDialog, setOpenDialog] = useState(false);
   const [menuAnchor, setMenuAnchor] = useState<{ element: HTMLElement; userId: string } | null>(null);
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetUserId, setResetUserId] = useState<string | null>(null);
+  const [tempPassword, setTempPassword] = useState<string>('');
+  const [customPassword, setCustomPassword] = useState<string>('');
+  const [showPassword, setShowPassword] = useState<boolean>(false);
   const [newUser, setNewUser] = useState<NewUser>({
     email: '',
     name: '',
     password: '',
     role: 'user',
-    credits: 10,
-    phone: '',
-    department: ''
+  phone: '',
+  department: ''
   });
+
+  // Estado para gestionar eliminados (soft-deleted)
+  const [deletedOpen, setDeletedOpen] = useState(false);
+  const [deletedLoading, setDeletedLoading] = useState(false);
+  const [deletedError, setDeletedError] = useState('');
+  const [deletedList, setDeletedList] = useState<Array<{ id: string; email: string; name: string; deleted_at?: string }>>([]);
+  const [deletedCount, setDeletedCount] = useState<number>(0);
 
   const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
     const token = localStorage.getItem('authToken');
@@ -140,7 +157,6 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
         name: '',
         password: '',
         role: 'user',
-        credits: 10,
         phone: '',
         department: ''
       });
@@ -188,25 +204,101 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
     }
   };
 
-  const updateUserCredits = async (userId: string, newCredits: number) => {
+  const openResetDialog = (userId: string) => {
+    setResetUserId(userId);
+    setTempPassword('');
+    setCustomPassword('');
+    setShowPassword(false);
+    setResetOpen(true);
+  };
+
+  const resetPassword = async (mode: 'generate' | 'custom') => {
+    if (!resetUserId) return;
     setLoading(true);
     setError('');
     try {
-      const response = await authenticatedFetch('/.netlify/functions/admin-users', {
-        method: 'PUT',
-        body: JSON.stringify({ id: userId, credits: newCredits }),
-      });
-
-      if (!response.ok) {
-        throw new Error('Error al actualizar créditos');
+  type ResetBody = { userId: string; customPassword?: string };
+  const body: ResetBody = { userId: resetUserId };
+      if (mode === 'custom') {
+        if (customPassword.length < 6) {
+          setError('La contraseña debe tener al menos 6 caracteres');
+          setLoading(false);
+          return;
+        }
+        body.customPassword = customPassword;
       }
 
-      setSuccess('Créditos actualizados exitosamente');
-      await loadUsers();
+      const response = await authenticatedFetch('/.netlify/functions/admin-reset-password', {
+        method: 'POST',
+        body: JSON.stringify(body)
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Error al restablecer contraseña');
+      }
+      setTempPassword(data.tempPassword as string);
+      setSuccess('Contraseña restablecida. Puedes revelarla y copiarla.');
+      setShowPassword(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error desconocido');
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Sin gestión de créditos
+  const loadDeletedUsers = useCallback(async () => {
+    setDeletedLoading(true);
+    setDeletedError('');
+    try {
+      const resp = await authenticatedFetch('/.netlify/functions/cleanup-deleted-users');
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Error al consultar eliminados');
+      const list = (data.deleted_users || []) as Array<{ id: string; email: string; name: string; deleted_at?: string }>;
+      setDeletedList(list);
+      setDeletedCount(Number(data.deleted_users_count || list.length || 0));
+    } catch (e) {
+      setDeletedError(e instanceof Error ? e.message : 'Error desconocido');
+    } finally {
+      setDeletedLoading(false);
+    }
+  }, []);
+
+  const executeCleanup = async () => {
+    setDeletedLoading(true);
+    setDeletedError('');
+    try {
+      // Ejecuta la limpieza definitiva (requiere token admin, lo agrega authenticatedFetch)
+      const resp = await authenticatedFetch('/.netlify/functions/cleanup-deleted-users', { method: 'POST' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Error al limpiar usuarios eliminados');
+      setSuccess(data.message || 'Limpieza ejecutada');
+      // Refrescar lista
+      await loadDeletedUsers();
+      // Y refrescar usuarios activos
+      await loadUsers();
+    } catch (e) {
+      setDeletedError(e instanceof Error ? e.message : 'Error desconocido');
+    } finally {
+      setDeletedLoading(false);
+    }
+  };
+
+  const restoreDeletedUser = async (userId: string) => {
+    setDeletedLoading(true);
+    setDeletedError('');
+    try {
+      const resp = await authenticatedFetch(`/.netlify/functions/cleanup-deleted-users?id=${userId}`, { method: 'PATCH' });
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Error al restaurar usuario');
+      setSuccess('Usuario restaurado');
+      await loadDeletedUsers();
+      await loadUsers();
+    } catch (e) {
+      setDeletedError(e instanceof Error ? e.message : 'Error desconocido');
+    } finally {
+      setDeletedLoading(false);
     }
   };
 
@@ -295,7 +387,7 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
         <Button
           variant="outlined"
           color="warning"
-          onClick={() => window.open('/.netlify/functions/cleanup-deleted-users', '_blank')}
+          onClick={() => { setDeletedOpen(true); void loadDeletedUsers(); }}
           size="small"
         >
           Gestionar Eliminados
@@ -331,7 +423,6 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
                 <TableCell>Nombre</TableCell>
                 <TableCell>Email</TableCell>
                 <TableCell>Rol</TableCell>
-                <TableCell>Créditos</TableCell>
                 <TableCell>Certificados</TableCell>
                 <TableCell>Acciones</TableCell>
               </TableRow>
@@ -348,24 +439,12 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
                       color={userItem.role === 'admin' ? 'primary' : 'default'}
                     />
                   </TableCell>
-                  <TableCell>
-                    <TextField
-                      type="number"
-                      value={userItem.credits}
-                      onChange={(e) => {
-                        const newCredits = parseInt(e.target.value) || 0;
-                        updateUserCredits(userItem.id, newCredits);
-                      }}
-                      size="small"
-                      sx={{ width: 80 }}
-                    />
-                  </TableCell>
+                  
                   <TableCell>{userItem.certificates_count}</TableCell>
                   <TableCell>
                     <IconButton
                       onClick={(e) => setMenuAnchor({ element: e.currentTarget, userId: userItem.id })}
                       size="small"
-                      color="error"
                     >
                       <MoreVertIcon />
                     </IconButton>
@@ -383,6 +462,19 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
         open={Boolean(menuAnchor)}
         onClose={() => setMenuAnchor(null)}
       >
+        <MenuItem 
+          onClick={() => {
+            if (menuAnchor) {
+              openResetDialog(menuAnchor.userId);
+              setMenuAnchor(null);
+            }
+          }}
+        >
+          <ListItemIcon>
+            <KeyIcon fontSize="small" />
+          </ListItemIcon>
+          <ListItemText>Restablecer contraseña</ListItemText>
+        </MenuItem>
         <MenuItem 
           onClick={() => {
             if (menuAnchor) {
@@ -411,6 +503,123 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
           <ListItemText>Eliminar permanentemente</ListItemText>
         </MenuItem>
       </Menu>
+
+      {/* Dialog de restablecer contraseña */}
+      <Dialog open={resetOpen} onClose={() => setResetOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Restablecer contraseña</DialogTitle>
+        <DialogContent>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Las contraseñas no se pueden ver ni recuperar. Aquí podrás generar una nueva temporal o establecer una personalizada. Se mostrará una sola vez.
+          </Alert>
+
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <TextField
+              label="Contraseña personalizada (opcional)"
+              type={showPassword ? 'text' : 'password'}
+              value={customPassword}
+              onChange={(e) => setCustomPassword(e.target.value)}
+              InputProps={{
+                endAdornment: (
+                  <IconButton onClick={() => setShowPassword(s => !s)}>
+                    {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                  </IconButton>
+                )
+              }}
+              helperText="Mínimo 6 caracteres. O deja vacío para generar una segura."
+              fullWidth
+            />
+
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button variant="contained" onClick={() => resetPassword(customPassword ? 'custom' : 'generate')} disabled={loading}>
+                {customPassword ? 'Establecer personalizada' : 'Generar nueva'}
+              </Button>
+              <Button variant="text" onClick={() => { setCustomPassword(''); setTempPassword(''); }} disabled={loading}>Limpiar</Button>
+            </Box>
+
+            {tempPassword && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>Nueva contraseña temporal</Typography>
+                <TextField
+                  fullWidth
+                  type={showPassword ? 'text' : 'password'}
+                  value={tempPassword}
+                  InputProps={{
+                    readOnly: true,
+                    endAdornment: (
+                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <IconButton onClick={() => setShowPassword(s => !s)}>
+                          {showPassword ? <VisibilityOffIcon /> : <VisibilityIcon />}
+                        </IconButton>
+                        <IconButton onClick={() => navigator.clipboard.writeText(tempPassword)}>
+                          <ContentCopyIcon />
+                        </IconButton>
+                      </Box>
+                    )
+                  }}
+                />
+                <Alert severity="warning" sx={{ mt: 1 }}>
+                  Guarda o comparte esta contraseña ahora. No volverá a mostrarse.
+                </Alert>
+              </Box>
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetOpen(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog gestionar eliminados */}
+      <Dialog open={deletedOpen} onClose={() => setDeletedOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Gestionar usuarios eliminados</DialogTitle>
+        <DialogContent>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Aquí se listan los usuarios eliminados (soft-delete). Puedes ejecutar una limpieza definitiva.
+          </Alert>
+          {deletedError && <Alert severity="error" sx={{ mb: 2 }}>{deletedError}</Alert>}
+          {deletedLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', my: 2 }}>
+              <CircularProgress size={24} />
+            </Box>
+          ) : (
+            <>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                Total eliminados: {deletedCount}
+              </Typography>
+              {deletedList.length === 0 ? (
+                <Typography variant="body2" color="text.secondary">No hay usuarios eliminados.</Typography>
+              ) : (
+                <List dense>
+                  {deletedList.map((u, idx) => (
+                    <>
+                      <ListItem key={u.id}
+                        secondaryAction={
+                          <Button size="small" variant="outlined" onClick={() => restoreDeletedUser(u.id)} disabled={deletedLoading}>
+                            Restaurar
+                          </Button>
+                        }
+                      >
+                        <ListItemText
+                          primary={`${u.name || '(sin nombre)'} <${u.email}>`}
+                          secondary={u.deleted_at ? `Eliminado: ${new Date(u.deleted_at).toLocaleString()}` : undefined}
+                        />
+                      </ListItem>
+                      {idx < deletedList.length - 1 && <Divider component="li" />}
+                    </>
+                  ))}
+                </List>
+              )}
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={loadDeletedUsers} disabled={deletedLoading}>Actualizar</Button>
+          <Button startIcon={<DeleteSweepIcon />} color="error" variant="contained" onClick={executeCleanup} disabled={deletedLoading || deletedCount === 0}>
+            Ejecutar limpieza
+          </Button>
+          <Button onClick={() => setDeletedOpen(false)}>Cerrar</Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Dialog para crear usuario */}
       <Dialog open={openDialog} onClose={() => setOpenDialog(false)} maxWidth="sm" fullWidth>
@@ -442,19 +651,13 @@ export function AdminPanelOverlay({ onBack }: AdminPanelProps) {
               <Select
                 value={newUser.role}
                 label="Rol"
-                onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value }))}
+                onChange={(e) => setNewUser(prev => ({ ...prev, role: e.target.value as string }))}
               >
                 <MenuItem value="user">Usuario</MenuItem>
                 <MenuItem value="admin">Administrador</MenuItem>
               </Select>
             </FormControl>
-            <TextField
-              fullWidth
-              label="Créditos iniciales"
-              type="number"
-              value={newUser.credits}
-              onChange={(e) => setNewUser(prev => ({ ...prev, credits: parseInt(e.target.value) || 0 }))}
-            />
+            {/* Créditos eliminados */}
           </Box>
         </DialogContent>
         <DialogActions>

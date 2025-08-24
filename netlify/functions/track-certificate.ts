@@ -73,9 +73,9 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Verificar que el usuario tenga créditos
+    // Verificar que el usuario exista
     const userResult = await client.query(
-      'SELECT credits FROM users WHERE id = $1',
+      'SELECT id FROM users WHERE id = $1',
       [decoded.id]
     );
 
@@ -87,33 +87,17 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    const user = userResult.rows[0];
-    if (user.credits <= 0) {
-      return {
-        statusCode: 400,
-        headers,
-        body: JSON.stringify({ error: 'Créditos insuficientes' })
-      };
-    }
-
     // Registrar uso del certificado
     await client.query(
       'INSERT INTO certificate_usage (user_id, folio, placas) VALUES ($1, $2, $3)',
       [decoded.id, folio, placas]
     );
 
-    // Descontar crédito
-    await client.query(
-      'UPDATE users SET credits = credits - 1 WHERE id = $1',
-      [decoded.id]
-    );
-
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        message: 'Certificado registrado exitosamente',
-        creditsRemaining: user.credits - 1
+  message: 'Certificado registrado exitosamente'
       })
     };
 

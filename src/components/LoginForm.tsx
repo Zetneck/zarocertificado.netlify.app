@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Box,
   Container,
@@ -12,6 +12,7 @@ import {
   IconButton,
   Link
 } from '@mui/material';
+import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import {
   Email,
   Lock,
@@ -28,6 +29,13 @@ export function LoginForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  // Recuperación de contraseña
+  const [resetOpen, setResetOpen] = useState(false);
+  const [resetEmail, setResetEmail] = useState('');
+  const [resetInfo, setResetInfo] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{
     email?: string;
@@ -37,6 +45,20 @@ export function LoginForm() {
   const { signIn, loading } = useAuthReal();
   const { isMobile } = useResponsive();
   const theme = useTheme();
+
+  // Si llega ?token= en la URL, abrir el diálogo de confirmación
+  useEffect(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const t = params.get('token');
+      if (t) {
+        setResetToken(t);
+        setConfirmOpen(true);
+      }
+    } catch (err) {
+      console.debug('No se pudo leer token de URL', err);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,41 +84,56 @@ export function LoginForm() {
       return;
     }
 
-    try {
+  try {
       const result = await signIn(email, password);
       
       // Si llegamos aquí, el login fue exitoso
       if (result?.success) {
         // Login exitoso - no necesita log
       }
-    } catch (error) {
-      
+  } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error al iniciar sesión';
       const normalizedMessage = errorMessage.toLowerCase().trim();
-      
-      // Manejar diferentes tipos de errores
-      if (normalizedMessage.includes('credenciales incorrectas') || 
-          normalizedMessage.includes('credentials') || 
-          normalizedMessage.includes('invalid credentials')) {
+
+      // Reset field errors
+      const newFieldErrors: { email?: string; password?: string } = {};
+
+      // Manejar diferentes tipos de errores con precisión
+      if (normalizedMessage.includes('el correo no existe')) {
+        newFieldErrors.email = 'Este correo no está registrado';
+        setError('❌ El correo ingresado no existe.');
+      } else if (normalizedMessage.includes('la contraseña es incorrecta')) {
+        newFieldErrors.password = 'Contraseña incorrecta';
+        setError('❌ La contraseña es incorrecta.');
+      } else if (normalizedMessage.includes('credenciales incorrectas') ||
+                 normalizedMessage.includes('credentials') ||
+                 normalizedMessage.includes('invalid credentials')) {
         setError('❌ Correo electrónico o contraseña incorrectos. Por favor verifica tus datos.');
-      } else if (normalizedMessage.includes('email y contraseña son requeridos') || 
+      } else if (normalizedMessage.includes('email y contraseña son requeridos') ||
                  normalizedMessage.includes('required')) {
         setError('📝 Por favor completa todos los campos requeridos.');
-      } else if (normalizedMessage.includes('error interno del servidor') || 
+      } else if (normalizedMessage.includes('error interno del servidor') ||
                  normalizedMessage.includes('internal server error')) {
         setError('🔧 Error del servidor. Por favor intenta nuevamente en unos momentos.');
-      } else if (normalizedMessage.includes('fetch') || 
-                 normalizedMessage.includes('network') || 
+      } else if (normalizedMessage.includes('fetch') ||
+                 normalizedMessage.includes('network') ||
                  normalizedMessage.includes('conexión')) {
         setError('🌐 Error de conexión. Por favor verifica tu internet e intenta nuevamente.');
-      } else if (normalizedMessage.includes('bloqueado') || 
-                 normalizedMessage.includes('suspendido') || 
+      } else if (normalizedMessage.includes('bloqueado') ||
+                 normalizedMessage.includes('suspendido') ||
                  normalizedMessage.includes('blocked')) {
         setError('🔒 Tu cuenta ha sido suspendida. Contacta al administrador.');
       } else {
         // Para cualquier otro error, mostrar el mensaje específico
         setError(`⚠️ ${errorMessage}`);
       }
+
+      setFieldErrors(newFieldErrors);
+      // Forzar foco visual en la alerta (sin snackbar)
+      setTimeout(() => {
+        const el = document.querySelector('[role="alert"]') as HTMLElement | null;
+        el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 0);
     }
   };
 
@@ -304,14 +341,19 @@ export function LoginForm() {
 
             {error && (
               <Alert 
-                severity="error" 
-                sx={{ 
+                severity="error"
+                variant="outlined"
+                sx={(theme) => ({ 
                   mt: 2, 
                   fontSize: { xs: '0.8rem', sm: '0.875rem' },
-                  '& .MuiAlert-message': {
-                    width: '100%'
-                  }
-                }}
+                  borderColor: theme.palette.error.light,
+                  backgroundColor: theme.palette.common.white,
+                  color: theme.palette.error.main,
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+                  borderRadius: 2,
+                  '& .MuiAlert-icon': { color: theme.palette.error.main },
+                  '& .MuiAlert-message': { width: '100%' }
+                })}
                 onClose={() => setError(null)}
               >
                 <Box>
@@ -351,12 +393,118 @@ export function LoginForm() {
               href="#" 
               variant="body2"
               sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
+              onClick={(e) => { e.preventDefault(); setResetOpen(true); setResetInfo(null); }}
             >
               ¿Olvidaste tu contraseña?
             </Link>
           </Box>
         </Paper>
       </Container>
+      {/* Dialog solicitar reset */}
+      <Dialog open={resetOpen} onClose={() => setResetOpen(false)}>
+        <DialogTitle>Recuperar contraseña</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Correo electrónico"
+            type="email"
+            value={resetEmail}
+            onChange={(e) => setResetEmail(e.target.value)}
+            sx={{ mt: 1 }}
+          />
+          {resetInfo && <Alert severity="info" sx={{ mt: 2, whiteSpace: 'pre-wrap' }}>{resetInfo}</Alert>}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setResetOpen(false)}>Cerrar</Button>
+          <Button color="secondary" onClick={() => { setConfirmOpen(true); setResetOpen(false); }}>Tengo un token</Button>
+          <Button
+            variant="contained"
+            onClick={async () => {
+              try {
+                const resp = await fetch('/.netlify/functions/request-password-reset', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ email: resetEmail })
+                });
+                const data = await resp.json();
+                if (!resp.ok) throw new Error(data.error || 'Error al solicitar recuperación');
+                if (data.resetUrl) {
+                  setResetInfo(`Hemos generado un enlace de prueba (solo desarrollo):\n${data.resetUrl}\n\nSi no se abre automáticamente, copia el token de la URL y pégalo en el siguiente paso.`);
+                } else {
+                  setResetInfo('Si el correo existe, recibirás instrucciones por email.');
+                }
+              } catch (err) {
+                console.debug('Solicitud de recuperación fallida', err);
+                setResetInfo('Si el correo existe, recibirás instrucciones por email.');
+              }
+            }}
+          >
+            Enviar enlace
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog confirmar reset */}
+      <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+        <DialogTitle>Restablecer contraseña</DialogTitle>
+        <DialogContent>
+          <TextField
+            fullWidth
+            label="Token"
+            value={resetToken}
+            onChange={(e) => setResetToken(e.target.value)}
+            sx={{ mt: 1 }}
+          />
+          <TextField
+            fullWidth
+            label="Nueva contraseña"
+            type={showPassword ? 'text' : 'password'}
+            value={newPassword}
+            onChange={(e) => setNewPassword(e.target.value)}
+            sx={{ mt: 2 }}
+            InputProps={{
+              endAdornment: (
+                <IconButton onClick={() => setShowPassword(s => !s)}>
+                  {showPassword ? <VisibilityOff /> : <Visibility />}
+                </IconButton>
+              )
+            }}
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setConfirmOpen(false)}>Cerrar</Button>
+          <Button
+            variant="contained"
+            disabled={newPassword.length < 6 || !resetToken}
+            onClick={async () => {
+              try {
+                const resp = await fetch('/.netlify/functions/confirm-password-reset', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ token: resetToken, password: newPassword })
+                });
+                const data = await resp.json();
+                if (!resp.ok || !data.success) throw new Error(data.error || 'Error al restablecer');
+                setConfirmOpen(false);
+                alert('Contraseña actualizada. Ya puedes iniciar sesión.');
+                // Limpiar token de la URL si venía en query
+                try {
+                  const url = new URL(window.location.href);
+                  url.searchParams.delete('token');
+                  window.history.replaceState({}, '', url.toString());
+                } catch (err2) {
+                  console.debug('No se pudo limpiar el token de la URL', err2);
+                }
+              } catch (err) {
+                console.debug('Confirmación de reset fallida', err);
+                alert('No se pudo restablecer la contraseña. Verifica el token.');
+              }
+            }}
+          >
+            Restablecer
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }

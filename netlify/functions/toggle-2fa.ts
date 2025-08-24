@@ -100,7 +100,7 @@ export const handler = async (event: NetlifyEvent) => {
         UPDATE users 
         SET two_factor_enabled = $1, updated_at = NOW()
         WHERE id = $2
-        RETURNING id, email, name, role, two_factor_enabled, credits, created_at, last_login
+  RETURNING id, email, name, role, two_factor_enabled, created_at, last_login
       `;
       
       const result = await client.query(updateQuery, [enable, decoded.id]);
@@ -134,7 +134,6 @@ export const handler = async (event: NetlifyEvent) => {
             name: user.name,
             role: user.role,
             twoFactorEnabled: user.two_factor_enabled,
-            credits: user.credits,
             createdAt: user.created_at,
             lastLogin: user.last_login
           }

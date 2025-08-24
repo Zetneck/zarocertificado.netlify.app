@@ -63,17 +63,22 @@ export const handler: Handler = async (event) => {
       const offset = (page - 1) * limit;
 
       const result = await client.query(
-        `SELECT id, email, name, role, phone, department, credits, 
+        `SELECT id, email, name, role, phone, department, 
                 two_factor_enabled, created_at, last_login,
                 (SELECT COUNT(*) FROM certificate_usage WHERE user_id = users.id) as certificates_count
          FROM users 
-         WHERE email NOT LIKE '%_deleted_%'
+         WHERE NOT (
+           email ~* '_deleted_'
+           OR POSITION('_deleted_' IN email) > 0
+           OR email ILIKE '%\\_deleted\\_%' ESCAPE '\\'
+           OR email ~* '\\+deleted_'
+         )
          ORDER BY created_at DESC 
          LIMIT $1 OFFSET $2`,
         [limit, offset]
       );
 
-      const countResult = await client.query('SELECT COUNT(*) FROM users WHERE email NOT LIKE \'%_deleted_%\'');
+  const countResult = await client.query("SELECT COUNT(*) FROM users WHERE NOT (email ~* '_deleted_' OR POSITION('_deleted_' IN email) > 0 OR email ILIKE '%\\_deleted\\_%' ESCAPE '\\' OR email ~* '\\+deleted_')");
 
       return {
         statusCode: 200,
@@ -91,7 +96,7 @@ export const handler: Handler = async (event) => {
 
     } else if (event.httpMethod === 'POST') {
       // Crear nuevo usuario
-      const { email, name, password, role, credits, phone, department } = JSON.parse(event.body || '{}');
+  const { email, name, password, role, phone, department } = JSON.parse(event.body || '{}');
 
       if (!email || !name || !password) {
         return {
@@ -115,15 +120,14 @@ export const handler: Handler = async (event) => {
       const passwordHash = await bcrypt.hash(password, 10);
 
       const result = await client.query(
-        `INSERT INTO users (email, name, password_hash, role, credits, phone, department)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)
-         RETURNING id, email, name, role, credits, phone, department, created_at`,
+        `INSERT INTO users (email, name, password_hash, role, phone, department)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, email, name, role, phone, department, created_at`,
         [
           email.toLowerCase(),
           name,
           passwordHash,
           role || 'user',
-          credits || 10,
           phone || null,
           department || null
         ]
@@ -151,7 +155,7 @@ export const handler: Handler = async (event) => {
         };
       }
 
-      const allowedFields = ['name', 'role', 'credits', 'phone', 'department', 'two_factor_enabled'];
+  const allowedFields = ['name', 'role', 'phone', 'department', 'two_factor_enabled'];
       const updates: string[] = [];
       const values: (string | number | boolean)[] = [];
       let paramCount = 1;
@@ -176,7 +180,7 @@ export const handler: Handler = async (event) => {
       const result = await client.query(
         `UPDATE users SET ${updates.join(', ')}, updated_at = NOW() 
          WHERE id = $${paramCount} 
-         RETURNING id, email, name, role, credits, phone, department`,
+         RETURNING id, email, name, role, phone, department`,
         values
       );
 
@@ -213,16 +217,28 @@ export const handler: Handler = async (event) => {
           body: JSON.stringify({ message: 'Usuario eliminado permanentemente' })
         };
       } else {
-        // Soft delete - marcar email como eliminado
-        await client.query(
-          'UPDATE users SET email = CONCAT(email, \'_deleted_\', extract(epoch from now())), updated_at = NOW() WHERE id = $1',
+        // Soft delete - reescribir email como local+deleted_<epoch>@dominio para mantener formato válido
+        const before = await client.query('SELECT email FROM users WHERE id = $1', [userId]);
+        const prevEmail = before.rows[0]?.email as string | undefined;
+        if (!prevEmail || !prevEmail.includes('@')) {
+          return { statusCode: 400, headers, body: JSON.stringify({ error: 'Email inválido para soft delete' }) };
+        }
+
+        const updateRes = await client.query(
+          `UPDATE users 
+           SET email = split_part(email, '@', 1) || '+deleted_' || extract(epoch from now())::text || '@' || split_part(email, '@', 2),
+               updated_at = NOW()
+           WHERE id = $1
+           RETURNING email`,
           [userId]
         );
+        const newEmail = updateRes.rows[0]?.email;
+        console.log(`[admin-users] Soft delete aplicado a id=${userId}: ${prevEmail} -> ${newEmail}`);
 
         return {
           statusCode: 200,
           headers,
-          body: JSON.stringify({ message: 'Usuario eliminado exitosamente' })
+          body: JSON.stringify({ message: 'Usuario eliminado exitosamente', id: userId, softDeletedEmail: newEmail })
         };
       }
     }

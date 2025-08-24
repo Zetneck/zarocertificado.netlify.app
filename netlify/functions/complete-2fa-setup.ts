@@ -99,7 +99,7 @@ export const handler: Handler = async (event) => {
 
     // Buscar usuario
     const userQuery = `
-      SELECT id, email, name, role, phone, department, credits, 
+  SELECT id, email, name, role, phone, department, 
              two_factor_enabled, two_factor_secret, settings, 
              created_at, last_login
       FROM users 
@@ -194,7 +194,6 @@ export const handler: Handler = async (event) => {
       role: user.role,
       phone: user.phone,
       department: user.department,
-      credits: user.credits,
       twoFactorEnabled: true, // Ahora está habilitado
       settings: user.settings || {},
       createdAt: user.created_at,

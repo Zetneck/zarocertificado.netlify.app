@@ -21,7 +21,6 @@ import {
   Email,
   Badge,
   CalendarToday,
-  CreditCard,
   ArrowBack
 } from '@mui/icons-material';
 import { useAuthReal } from '../hooks/useAuthReal';
@@ -256,14 +255,7 @@ export function UserProfile({ onBack }: UserProfileProps) {
               </Box>
             </Box>
 
-            <Box>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2 }}>
-                <CreditCard color="action" />
-                <Typography variant="body2" color="text.secondary">
-                  Créditos disponibles: {user?.credits || 0}
-                </Typography>
-              </Box>
-            </Box>
+            {/* Créditos eliminados */}
           </Box>
         </CardContent>
       </Card>
