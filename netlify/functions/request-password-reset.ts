@@ -23,6 +23,12 @@ export const handler: Handler = async (event) => {
   try {
     const { email } = JSON.parse(event.body || '{}') as { email?: string };
 
+    console.log('🔧 DIAGNÓSTICO EMAIL:');
+    console.log('- RESEND_KEY existe:', !!process.env.RESEND_KEY);
+    console.log('- MAIL_FROM:', process.env.MAIL_FROM);
+    console.log('- BASE_URL:', process.env.BASE_URL);
+    console.log('- NODE_ENV:', process.env.NODE_ENV);
+
     // Siempre respondemos 200 para evitar enumeración de emails
     const genericOk = { statusCode: 200, headers, body: JSON.stringify({ ok: true, message: 'Si el correo existe, se enviaron instrucciones para restablecer la contraseña.' }) };
     if (!email) return genericOk;
@@ -81,6 +87,7 @@ export const handler: Handler = async (event) => {
     const resendApiKey = process.env.RESEND_KEY;
     const fromEmail = process.env.MAIL_FROM;
     if (resendApiKey && fromEmail) {
+      console.log('📧 Intentando enviar email via Resend...');
       try {
         const appName = process.env.APP_NAME || 'ZARO Certificados';
         const html = `
@@ -113,12 +120,18 @@ export const handler: Handler = async (event) => {
         });
         if (!resp.ok) {
           const errText = await resp.text().catch(() => 'unknown');
-          console.warn('Resend response not OK:', resp.status, errText);
+          console.warn('❌ Resend response not OK:', resp.status, errText);
+        } else {
+          const respData = await resp.json().catch(() => ({}));
+          console.log('✅ Email enviado exitosamente:', respData.id || 'ID no disponible');
         }
       } catch (mailErr) {
-        console.warn('No se pudo enviar email con Resend:', mailErr);
+        console.error('❌ Error enviando email con Resend:', mailErr);
       }
     } else {
+      console.warn('⚠️ Variables de email no configuradas completamente:');
+      console.warn('- resendApiKey existe:', !!resendApiKey);
+      console.warn('- fromEmail:', fromEmail);
       // Sin proveedor de email: log para desarrollo
       console.log(`🔑 Reset password solicitado para ${lowerEmail}. URL (dev): ${resetUrl}`);
     }
