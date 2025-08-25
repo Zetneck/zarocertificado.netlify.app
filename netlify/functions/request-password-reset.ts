@@ -74,15 +74,15 @@ export const handler: Handler = async (event) => {
     );
 
     // Construir URL para email (en dev la devolvemos para pruebas)
-    const origin = event.headers.origin || process.env.PUBLIC_BASE_URL || 'http://localhost:8888';
+    const origin = event.headers.origin || process.env.BASE_URL || 'http://localhost:8888';
     const resetUrl = `${origin}/reset?token=${encodeURIComponent(token)}`;
 
     // Enviar correo si hay proveedor configurado (Resend)
-    const resendApiKey = process.env.RESEND_API_KEY;
-    const fromEmail = process.env.MAIL_FROM || process.env.RESEND_FROM;
+    const resendApiKey = process.env.RESEND_KEY;
+    const fromEmail = process.env.MAIL_FROM;
     if (resendApiKey && fromEmail) {
       try {
-        const appName = process.env.APP_NAME || 'Fumigación Certificados';
+        const appName = process.env.APP_NAME || 'ZARO Certificados';
         const html = `
           <div style="font-family:Arial,sans-serif;line-height:1.5;color:#222">
             <h2>${appName} - Restablecer contraseña</h2>
@@ -106,7 +106,7 @@ export const handler: Handler = async (event) => {
           body: JSON.stringify({
             from: fromEmail,
             to: [lowerEmail],
-            subject: `${process.env.APP_NAME || 'Tu cuenta'} - Restablecer contraseña`,
+            subject: `${process.env.APP_NAME || 'ZARO Certificados'} - Restablecer contraseña`,
             html,
             text,
           })
