@@ -9,6 +9,11 @@ const headers = {
 };
 
 export const handler: Handler = async (event) => {
+  // Bloquear en producción
+  if (process.env.NODE_ENV === 'production') {
+    return { statusCode: 404, headers, body: JSON.stringify({ error: 'Not found' }) };
+  }
+
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }

@@ -428,14 +428,15 @@ export function LoginForm() {
                 });
                 const data = await resp.json();
                 if (!resp.ok) throw new Error(data.error || 'Error al solicitar recuperación');
-                if (data.resetUrl) {
-                  setResetInfo(`Hemos generado un enlace de prueba (solo desarrollo):\n${data.resetUrl}\n\nSi no se abre automáticamente, copia el token de la URL y pégalo en el siguiente paso.`);
+                // Solo mostrar resetUrl en desarrollo local
+                if (data.resetUrl && window.location.hostname === 'localhost') {
+                  setResetInfo(`Enlace de prueba (solo desarrollo local):\n${data.resetUrl}\n\nCopia el token de la URL para el siguiente paso.`);
                 } else {
-                  setResetInfo('Si el correo existe, recibirás instrucciones por email.');
+                  setResetInfo('Se han enviado las instrucciones de recuperación a tu correo electrónico. Revisa tu bandeja de entrada y spam.');
                 }
               } catch (err) {
                 console.debug('Solicitud de recuperación fallida', err);
-                setResetInfo('Si el correo existe, recibirás instrucciones por email.');
+                setResetInfo('Se han enviado las instrucciones de recuperación a tu correo electrónico si la cuenta existe. Revisa tu bandeja de entrada y spam.');
               }
             }}
           >
