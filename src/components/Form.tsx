@@ -391,8 +391,7 @@ export function Form() {
               sx={{ 
                 '& .MuiInputBase-input': { 
                   fontSize: '0.875rem', 
-                  color: 'text.primary',
-                  fontWeight: 600
+                  color: 'text.primary'
                 }, 
                 '& .MuiInputLabel-root': { 
                   fontSize: '0.875rem'
