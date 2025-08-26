@@ -389,11 +389,23 @@ export function Form() {
                 startAdornment: <InputAdornment position="start"><Badge sx={{ fontSize: '1rem' }} /></InputAdornment>,
               }}
               sx={{ 
-                '& .MuiInputBase-input': { fontSize: '0.875rem', color: 'text.primary' }, 
-                '& .MuiInputLabel-root': { fontSize: '0.875rem' },
+                '& .MuiInputBase-input': { 
+                  fontSize: '0.875rem', 
+                  color: 'text.primary',
+                  fontWeight: 600
+                }, 
+                '& .MuiInputLabel-root': { 
+                  fontSize: '0.875rem'
+                },
                 '& .Mui-disabled': { 
                   '& .MuiInputBase-input': { 
-                    WebkitTextFillColor: 'rgba(0, 0, 0, 0.87) !important'
+                    WebkitTextFillColor: '#ffffff !important',
+                    color: '#ffffff !important',
+                    fontWeight: 'bold',
+                    fontSize: '1rem'
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255, 255, 255, 0.23) !important'
                   }
                 }
               }}
