@@ -48,6 +48,30 @@ export function Form() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [showValidation, setShowValidation] = useState(false);
   
+  // Obtener el siguiente folio al cargar el componente
+  useEffect(() => {
+    const obtenerSiguienteFolio = async () => {
+      if (folio) return; // Si ya tiene folio, no obtener otro
+      
+      try {
+        const response = await fetch('/.netlify/functions/get-next-folio');
+        const data = await response.json();
+        
+        if (data.success && data.nextFolio) {
+          setFolio(data.nextFolio.toString());
+        } else {
+          console.warn('No se pudo obtener el folio, usando 10100 por defecto');
+          setFolio('10100');
+        }
+      } catch (error) {
+        console.error('Error obteniendo folio:', error);
+        setFolio('10100'); // Fallback
+      }
+    };
+
+    obtenerSiguienteFolio();
+  }, [folio, setFolio]); // Incluir dependencias
+  
   // Estados para las nuevas funcionalidades
   const [validityOption, setValidityOption] = useState<ValidityOption | ''>('');
   const [certificateStatus, setCertificateStatus] = useState<CertificateStatus>('draft');
@@ -144,8 +168,26 @@ export function Form() {
     setAlert(null);
 
     try {
+      // Reservar el folio antes de generar el PDF
+      const folioResponse = await fetch('/.netlify/functions/reserve-folio', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const folioData = await folioResponse.json();
+      let finalFolio = folio;
+      
+      if (folioData.success && folioData.folio) {
+        finalFolio = folioData.folio.toString();
+        setFolio(finalFolio); // Actualizar el folio en el formulario
+      } else {
+        console.warn('No se pudo reservar folio, usando el actual:', folio);
+      }
+
       const data: CertificateData = {
-        folio,
+        folio: finalFolio,
         remolque,
         placas,
         fechaInicio: fechaInicio?.format('DD/MM/YYYY') || '',
@@ -156,9 +198,26 @@ export function Form() {
 
       if (result.success) {
         setAlert({
-          message: `PDF generado exitosamente: ${result.fileName || 'certificado.pdf'}`,
+          message: `PDF generado exitosamente con folio ${finalFolio}: ${result.fileName || 'certificado.pdf'}`,
           severity: 'success'
         });
+        
+        // Limpiar el formulario y obtener el siguiente folio
+        setRemolque('');
+        setPlacas('');
+        setFechaInicio(null);
+        setFechaFinal(null);
+        
+        // Obtener el siguiente folio para el próximo certificado
+        try {
+          const nextFolioResponse = await fetch('/.netlify/functions/get-next-folio');
+          const nextFolioData = await nextFolioResponse.json();
+          if (nextFolioData.success && nextFolioData.nextFolio) {
+            setFolio(nextFolioData.nextFolio.toString());
+          }
+        } catch (err) {
+          console.warn('Error obteniendo siguiente folio:', err);
+        }
       } else {
         setAlert({
           message: `Error al generar PDF: ${result.error || 'Error desconocido'}`,
@@ -315,20 +374,29 @@ export function Form() {
       <Stack spacing={1.5}>
         {/* Datos básicos en grid */}
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 1.5 }}>
-          <Tooltip title="Número de folio" arrow>
+          <Tooltip title="Número de folio generado automáticamente" arrow>
             <TextField 
-              label="Folio" 
+              label="Folio (Automático)" 
               value={folio} 
-              onChange={(e) => setFolio(e.target.value)} 
               fullWidth 
               required
               size="small"
+              disabled={true}
               error={showValidation && !folio}
-              helperText={showValidation && !folio ? 'Requerido' : ''}
+              helperText={folio ? 'Folio generado automáticamente' : 'Cargando folio...'}
               InputProps={{
+                readOnly: true,
                 startAdornment: <InputAdornment position="start"><Badge sx={{ fontSize: '1rem' }} /></InputAdornment>,
               }}
-              sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' }, '& .MuiInputLabel-root': { fontSize: '0.875rem' } }}
+              sx={{ 
+                '& .MuiInputBase-input': { fontSize: '0.875rem', color: 'text.primary' }, 
+                '& .MuiInputLabel-root': { fontSize: '0.875rem' },
+                '& .Mui-disabled': { 
+                  '& .MuiInputBase-input': { 
+                    WebkitTextFillColor: 'rgba(0, 0, 0, 0.87) !important'
+                  }
+                }
+              }}
             />
           </Tooltip>
 
