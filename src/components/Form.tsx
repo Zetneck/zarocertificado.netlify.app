@@ -396,17 +396,6 @@ export function Form() {
                 }, 
                 '& .MuiInputLabel-root': { 
                   fontSize: '0.875rem'
-                },
-                '& .Mui-disabled': { 
-                  '& .MuiInputBase-input': { 
-                    WebkitTextFillColor: '#ffffff !important',
-                    color: '#ffffff !important',
-                    fontWeight: 'bold',
-                    fontSize: '1rem'
-                  },
-                  '& .MuiOutlinedInput-notchedOutline': {
-                    borderColor: 'rgba(255, 255, 255, 0.23) !important'
-                  }
                 }
               }}
             />
