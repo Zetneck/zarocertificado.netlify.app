@@ -1,8 +1,40 @@
 import { createContext } from 'react';
 import type { AlertColor } from '@mui/material';
 
+interface NotificationAction {
+  label: string;
+  icon?: React.ReactNode;
+  color?: 'primary' | 'secondary' | 'success' | 'error' | 'info' | 'warning';
+  onClick: () => void;
+}
+
+interface NotificationOptions {
+  title?: string;
+  duration?: number;
+  actions?: NotificationAction[];
+  showProgress?: boolean;
+  metadata?: {
+    folio?: string;
+    placas?: string;
+    fileName?: string;
+    timestamp?: Date;
+  };
+}
+
 export interface NotificationContextType {
-  showNotification: (message: string, severity?: AlertColor, duration?: number) => void;
+  showNotification: (
+    message: string, 
+    severity?: AlertColor, 
+    options?: NotificationOptions
+  ) => void;
+  showCertificateNotification: (
+    folio: string, 
+    placas: string, 
+    fileName: string,
+    onDownload: () => void,
+    onView: () => void,
+    onGenerateAnother: () => void
+  ) => void;
 }
 
 export const NotificationContext = createContext<NotificationContextType | undefined>(undefined);

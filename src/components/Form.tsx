@@ -28,6 +28,7 @@ import {
 import { generatePDF, type CertificateData } from '../utils/pdfGenerator';
 import { useCertificateContext } from '../hooks/useCertificateContext';
 import { useAuthReal } from '../hooks/useAuthReal';
+import { useNotification } from '../hooks/useNotification';
 import dayjs from 'dayjs';
 
 // Tipos para el estado del certificado
@@ -46,6 +47,7 @@ export function Form() {
   } = useCertificateContext();
   
   const { user, isAuthenticated } = useAuthReal();
+  const { showNotification, showCertificateNotification } = useNotification();
   
   const [alert, setAlert] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -152,6 +154,7 @@ export function Form() {
     setShowValidation(true);
     
     if (!isFormValid) {
+      showNotification('Por favor completa todos los campos obligatorios', 'warning');
       setAlert({
         message: 'Por favor completa todos los campos obligatorios',
         severity: 'error'
@@ -160,6 +163,7 @@ export function Form() {
     }
 
     if (validityOption === 'option-b' && !is30DaysValid) {
+      showNotification('El certificado debe tener una validez de exactamente 30 días', 'warning');
       setAlert({
         message: 'El certificado debe tener una validez de exactamente 30 días',
         severity: 'error'
@@ -243,8 +247,34 @@ export function Form() {
           // No afectar el flujo principal si falla el registro
         }
 
+        // Mostrar la nueva notificación mejorada con acciones
+        showCertificateNotification(
+          finalFolio,
+          placas,
+          result.fileName || 'certificado.pdf',
+          // Acción de descarga (ya se descargó automáticamente, pero permite re-descargar)
+          () => {
+            const link = document.createElement('a');
+            link.href = result.url || '';
+            link.download = result.fileName || 'certificado.pdf';
+            link.click();
+          },
+          // Acción de ver certificado
+          () => {
+            if (result.url) {
+              window.open(result.url, '_blank');
+            }
+          },
+          // Acción de generar otro certificado
+          () => {
+            // Ya se limpia el formulario automáticamente después de esta sección
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        );
+
+        // También mantener el alert original para compatibilidad
         setAlert({
-          message: `PDF generado exitosamente con folio ${finalFolio}: ${result.fileName || 'certificado.pdf'}`,
+          message: `PDF generado exitosamente con folio ${finalFolio}`,
           severity: 'success'
         });
         
@@ -265,12 +295,25 @@ export function Form() {
           console.warn('Error obteniendo siguiente folio:', err);
         }
       } else {
+        showNotification(
+          `Error al generar PDF: ${result.error || 'Error desconocido'}`,
+          'error',
+          { duration: 6000 }
+        );
         setAlert({
           message: `Error al generar PDF: ${result.error || 'Error desconocido'}`,
           severity: 'error'
         });
       }
     } catch (err) {
+      showNotification(
+        `Error inesperado: ${String(err)}`,
+        'error',
+        { 
+          duration: 8000,
+          title: 'Error del Sistema'
+        }
+      );
       setAlert({
         message: `Error inesperado: ${String(err)}`,
         severity: 'error'
