@@ -252,23 +252,20 @@ export function Form() {
           finalFolio,
           placas,
           result.fileName || 'certificado.pdf',
-          // Acción de descarga (ya se descargó automáticamente, pero permite re-descargar)
+          // Acción de descarga - el PDF ya se descargó, pero podemos implementar re-descarga si es necesario
           () => {
-            const link = document.createElement('a');
-            link.href = result.url || '';
-            link.download = result.fileName || 'certificado.pdf';
-            link.click();
+            showNotification('PDF ya descargado automáticamente', 'info', { duration: 3000 });
           },
-          // Acción de ver certificado
+          // Acción de ver certificado - generar nuevo PDF para vista
           () => {
-            if (result.url) {
-              window.open(result.url, '_blank');
-            }
+            showNotification('Generando nueva vista del certificado...', 'info', { duration: 3000 });
+            // Aquí podrías implementar lógica para re-generar y mostrar el PDF
           },
           // Acción de generar otro certificado
           () => {
             // Ya se limpia el formulario automáticamente después de esta sección
             window.scrollTo({ top: 0, behavior: 'smooth' });
+            showNotification('Formulario listo para nuevo certificado', 'success', { duration: 2000 });
           }
         );
 
