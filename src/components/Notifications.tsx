@@ -4,8 +4,6 @@ import {
   Snackbar, 
   Alert, 
   AlertTitle, 
-  Button, 
-  ButtonGroup, 
   Box, 
   Typography, 
   Chip,
@@ -15,9 +13,6 @@ import {
 } from '@mui/material';
 import type { AlertColor } from '@mui/material';
 import { 
-  Download as DownloadIcon,
-  Visibility as ViewIcon,
-  Add as AddIcon,
   Close as CloseIcon,
   CheckCircle as SuccessIcon,
   Error as ErrorIcon,
@@ -26,20 +21,12 @@ import {
 } from '@mui/icons-material';
 import { NotificationContext } from '../context/NotificationContext';
 
-interface NotificationAction {
-  label: string;
-  icon?: ReactNode;
-  color?: 'primary' | 'secondary' | 'success' | 'error' | 'info' | 'warning';
-  onClick: () => void;
-}
-
 interface Notification {
   id: string;
   title?: string;
   message: string;
   severity: AlertColor;
   duration?: number;
-  actions?: NotificationAction[];
   showProgress?: boolean;
   metadata?: {
     folio?: string;
@@ -72,7 +59,6 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     options?: {
       title?: string;
       duration?: number;
-      actions?: NotificationAction[];
       showProgress?: boolean;
       metadata?: Notification['metadata'];
     }
@@ -84,7 +70,6 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
       severity, 
       title: options?.title,
       duration: options?.duration || (severity === 'success' ? 8000 : 6000),
-      actions: options?.actions,
       showProgress: options?.showProgress || false,
       metadata: options?.metadata
     };
@@ -98,61 +83,13 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
     }
   };
 
-  // Función específica para notificaciones de certificados
-  const showCertificateNotification = (
-    folio: string, 
-    placas: string, 
-    fileName: string,
-    onDownload: () => void,
-    onView: () => void,
-    onGenerateAnother: () => void
-  ) => {
-    const actions: NotificationAction[] = [
-      {
-        label: 'Descargar',
-        icon: <DownloadIcon sx={{ fontSize: 16 }} />,
-        color: 'success',
-        onClick: onDownload
-      },
-      {
-        label: 'Ver',
-        icon: <ViewIcon sx={{ fontSize: 16 }} />,
-        color: 'info',
-        onClick: onView
-      },
-      {
-        label: 'Generar Otro',
-        icon: <AddIcon sx={{ fontSize: 16 }} />,
-        color: 'primary',
-        onClick: onGenerateAnother
-      }
-    ];
-
-    showNotification(
-      `Certificado generado exitosamente`,
-      'success',
-      {
-        title: '¡Certificado Listo!',
-        duration: 10000,
-        actions,
-        metadata: {
-          folio,
-          placas,
-          fileName,
-          timestamp: new Date()
-        }
-      }
-    );
-  };
-
   const handleClose = (id: string) => {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
   return (
     <NotificationContext.Provider value={{ 
-      showNotification, 
-      showCertificateNotification 
+      showNotification
     }}>
       {children}
       {notifications.map((notification) => (
@@ -303,68 +240,6 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                       }
                     }} 
                   />
-                )}
-
-                {/* Actions */}
-                {notification.actions && notification.actions.length > 0 && (
-                  <Box sx={{ mt: 2, pt: 2, borderTop: (theme) => `1px solid ${theme.palette.divider}` }}>
-                    <ButtonGroup 
-                      size="small" 
-                      variant="outlined"
-                      sx={{
-                        '& .MuiButton-root': {
-                          borderColor: (theme) => theme.palette.divider,
-                          color: (theme) => theme.palette.text.primary,
-                          fontSize: '0.75rem',
-                          padding: '6px 12px',
-                          minWidth: 'auto',
-                          fontWeight: 500,
-                          textTransform: 'none',
-                          backdropFilter: 'blur(10px)',
-                          transition: 'all 0.2s ease-in-out',
-                          '&:hover': {
-                            backgroundColor: (theme) => theme.palette.mode === 'dark' 
-                              ? 'rgba(99, 102, 241, 0.1)' 
-                              : 'rgba(99, 102, 241, 0.05)',
-                            borderColor: 'rgba(99, 102, 241, 0.5)',
-                            color: 'rgb(99, 102, 241)',
-                            transform: 'translateY(-1px)',
-                            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.15)'
-                          },
-                          '&:first-of-type:hover': {
-                            backgroundColor: (theme) => theme.palette.mode === 'dark' 
-                              ? 'rgba(34, 197, 94, 0.1)' 
-                              : 'rgba(34, 197, 94, 0.05)',
-                            borderColor: 'rgba(34, 197, 94, 0.5)',
-                            color: 'rgb(34, 197, 94)',
-                            boxShadow: '0 4px 12px rgba(34, 197, 94, 0.15)'
-                          },
-                          '&:last-of-type:hover': {
-                            backgroundColor: (theme) => theme.palette.mode === 'dark' 
-                              ? 'rgba(168, 85, 247, 0.1)' 
-                              : 'rgba(168, 85, 247, 0.05)',
-                            borderColor: 'rgba(168, 85, 247, 0.5)',
-                            color: 'rgb(168, 85, 247)',
-                            boxShadow: '0 4px 12px rgba(168, 85, 247, 0.15)'
-                          }
-                        }
-                      }}
-                    >
-                      {notification.actions.map((action, index) => (
-                        <Button
-                          key={index}
-                          onClick={() => {
-                            action.onClick();
-                            // Opcional: cerrar la notificación después de la acción
-                            // handleClose(notification.id);
-                          }}
-                          startIcon={action.icon}
-                        >
-                          {action.label}
-                        </Button>
-                      ))}
-                    </ButtonGroup>
-                  </Box>
                 )}
               </Box>
             </Alert>

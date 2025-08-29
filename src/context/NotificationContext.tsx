@@ -27,14 +27,6 @@ export interface NotificationContextType {
     severity?: AlertColor, 
     options?: NotificationOptions
   ) => void;
-  showCertificateNotification: (
-    folio: string, 
-    placas: string, 
-    fileName: string,
-    onDownload: () => void,
-    onView: () => void,
-    onGenerateAnother: () => void
-  ) => void;
 }
 
 export const NotificationContext = createContext<NotificationContextType | undefined>(undefined);

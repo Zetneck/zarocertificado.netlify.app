@@ -47,7 +47,7 @@ export function Form() {
   } = useCertificateContext();
   
   const { user, isAuthenticated } = useAuthReal();
-  const { showNotification, showCertificateNotification } = useNotification();
+  const { showNotification } = useNotification();
   
   const [alert, setAlert] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -247,57 +247,19 @@ export function Form() {
           // No afectar el flujo principal si falla el registro
         }
 
-        // Mostrar la nueva notificación mejorada con acciones
-        showCertificateNotification(
-          finalFolio,
-          placas,
-          result.fileName || 'certificado.pdf',
-          // Acción de descarga - re-generar y descargar el PDF
-          async () => {
-            try {
-              const newResult = await generatePDF({
-                folio: finalFolio,
-                remolque,
-                placas,
-                fechaInicio: fechaInicio?.format('DD/MM/YYYY') || '',
-                fechaFinal: fechaFinal?.format('DD/MM/YYYY') || ''
-              });
-              
-              if (newResult.success) {
-                showNotification('PDF re-descargado exitosamente', 'success', { duration: 3000 });
-              }
-            } catch (err) {
-              showNotification('Error al re-descargar el PDF', 'error', { duration: 4000 });
-              console.error('Error re-descargando PDF:', err);
+        // Notificación simple y elegante sin botones
+        showNotification(
+          `Certificado generado exitosamente`,
+          'success',
+          {
+            title: '¡Certificado Listo!',
+            duration: 6000,
+            metadata: {
+              folio: finalFolio,
+              placas: placas,
+              fileName: result.fileName || 'certificado.pdf',
+              timestamp: new Date()
             }
-          },
-          // Acción de ver certificado - re-generar y abrir en nueva pestaña  
-          async () => {
-            try {
-              const newResult = await generatePDF({
-                folio: finalFolio,
-                remolque,
-                placas,
-                fechaInicio: fechaInicio?.format('DD/MM/YYYY') || '',
-                fechaFinal: fechaFinal?.format('DD/MM/YYYY') || ''
-              });
-              
-              if (newResult.success) {
-                // El PDF se abre automáticamente al generarse
-                showNotification('Abriendo certificado en nueva pestaña', 'info', { duration: 2000 });
-              }
-            } catch (err) {
-              showNotification('Error al abrir el certificado', 'error', { duration: 4000 });
-              console.error('Error abriendo certificado:', err);
-            }
-          },
-          // Acción de generar otro certificado
-          () => {
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            showNotification('Listo para generar nuevo certificado', 'info', { 
-              duration: 2000,
-              title: 'Formulario preparado' 
-            });
           }
         );
 
