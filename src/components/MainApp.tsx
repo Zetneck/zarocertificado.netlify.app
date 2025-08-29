@@ -7,6 +7,7 @@ import { lightTheme, darkTheme } from '../themes/theme';
 import { LocalizationProvider } from '@mui/x-date-pickers';
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
 import { CertificateProvider } from '../context/CertificateContext';
+import { NotificationProvider } from './Notifications';
 import { RightSidebar } from './RightSidebar';
 import { UserMenu } from './UserMenu';
 import { Info } from '@mui/icons-material';
@@ -26,7 +27,8 @@ export function MainApp() {
   return (
     <ThemeProvider theme={mode === 'light' ? lightTheme : darkTheme}>
       <CssBaseline />
-      <CertificateProvider>
+      <NotificationProvider>
+        <CertificateProvider>
         {/* Contenedor principal con fondo moderno - SIN SCROLL GLOBAL */}
         <Box
           data-theme={mode}
@@ -312,6 +314,7 @@ export function MainApp() {
         </LocalizationProvider>
       </Box>
       </CertificateProvider>
+      </NotificationProvider>
     </ThemeProvider>
   );
 }

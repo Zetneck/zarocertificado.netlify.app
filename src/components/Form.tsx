@@ -272,11 +272,11 @@ export function Form() {
           }
         );
 
-        // También mantener el alert original para compatibilidad
-        setAlert({
-          message: `PDF generado exitosamente con folio ${finalFolio}`,
-          severity: 'success'
-        });
+        // Comentado: ya no necesitamos el alert simple, usamos la notificación mejorada
+        // setAlert({
+        //   message: `PDF generado exitosamente con folio ${finalFolio}`,
+        //   severity: 'success'
+        // });
         
         // Limpiar el formulario y obtener el siguiente folio
         setRemolque('');
