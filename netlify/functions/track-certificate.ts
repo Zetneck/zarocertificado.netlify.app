@@ -96,37 +96,86 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Verificar que el usuario exista
+    // Verificar que el usuario exista - DEBUG EXTENDIDO
     console.log('🔍 Buscando usuario con ID:', decoded.id);
-    const userResult = await client.query(
+    console.log('🔍 Tipo de ID:', typeof decoded.id);
+    console.log('🔍 Longitud de ID:', decoded.id.length);
+    
+    // Probar consulta por ID exacto
+    const userResultById = await client.query(
       'SELECT id, email, name FROM users WHERE id = $1',
       [decoded.id]
     );
 
-    console.log('📊 Resultado de consulta usuario:', {
-      rowsFound: userResult.rows.length,
-      user: userResult.rows[0] || null
+    // Probar consulta por email como backup
+    const userResultByEmail = await client.query(
+      'SELECT id, email, name FROM users WHERE email = $1',
+      [decoded.email]
+    );
+
+    // Probar consulta por ID como string
+    const userResultByIdString = await client.query(
+      'SELECT id, email, name FROM users WHERE id::text = $1',
+      [decoded.id]
+    );
+
+    console.log('📊 Resultado de consultas usuario:', {
+      byId: {
+        rowsFound: userResultById.rows.length,
+        user: userResultById.rows[0] || null
+      },
+      byEmail: {
+        rowsFound: userResultByEmail.rows.length,
+        user: userResultByEmail.rows[0] || null
+      },
+      byIdString: {
+        rowsFound: userResultByIdString.rows.length,
+        user: userResultByIdString.rows[0] || null
+      }
     });
+
+    // Usar el resultado que funcione
+    let userResult = userResultById;
+    if (userResultById.rows.length === 0 && userResultByEmail.rows.length > 0) {
+      console.log('⚠️ Usuario encontrado por email, no por ID - usando email como respaldo');
+      userResult = userResultByEmail;
+    } else if (userResultById.rows.length === 0 && userResultByIdString.rows.length > 0) {
+      console.log('⚠️ Usuario encontrado por ID como string - usando conversión string');
+      userResult = userResultByIdString;
+    }
 
     if (userResult.rows.length === 0) {
       console.log('❌ Usuario no encontrado en base de datos con ID:', decoded.id);
+      console.log('❌ Tampoco encontrado por email:', decoded.email);
       return {
         statusCode: 404,
         headers,
-        body: JSON.stringify({ error: 'Usuario no encontrado' })
+        body: JSON.stringify({ 
+          error: 'Usuario no encontrado',
+          debug: {
+            searchedId: decoded.id,
+            searchedEmail: decoded.email,
+            foundById: userResultById.rows.length,
+            foundByEmail: userResultByEmail.rows.length,
+            foundByIdString: userResultByIdString.rows.length
+          }
+        })
       };
     }
 
+    const foundUser = userResult.rows[0];
+
     // Registrar uso del certificado
     console.log('📝 Insertando certificado:', {
-      userId: decoded.id,
+      userId: foundUser.id,
+      userEmail: foundUser.email,
       folio: folio,
       placas: placas
     });
     
     await client.query(
       'INSERT INTO certificate_usage (user_id, folio, placas) VALUES ($1, $2, $3)',
-      [decoded.id, folio, placas]
+      [foundUser.id, folio, placas]
     );
 
     console.log('✅ Certificado registrado exitosamente en BD');
@@ -137,7 +186,8 @@ export const handler: Handler = async (event) => {
       body: JSON.stringify({
         message: 'Certificado registrado exitosamente',
         data: {
-          userId: decoded.id,
+          userId: foundUser.id,
+          userEmail: foundUser.email,
           folio: folio,
           placas: placas
         }
