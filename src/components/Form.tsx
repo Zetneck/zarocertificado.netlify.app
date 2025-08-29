@@ -27,6 +27,7 @@ import {
 } from '@mui/icons-material';
 import { generatePDF, type CertificateData } from '../utils/pdfGenerator';
 import { useCertificateContext } from '../hooks/useCertificateContext';
+import { useAuthReal } from '../hooks/useAuthReal';
 import dayjs from 'dayjs';
 
 // Tipos para el estado del certificado
@@ -43,6 +44,8 @@ export function Form() {
     fechaInicio, setFechaInicio,
     fechaFinal, setFechaFinal
   } = useCertificateContext();
+  
+  const { user, isAuthenticated } = useAuthReal();
   
   const [alert, setAlert] = useState<{ message: string; severity: 'success' | 'error' } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -197,13 +200,17 @@ export function Form() {
       const result = await generatePDF(data);
 
       if (result.success) {
-        // Registrar el certificado en la base de datos
+        // Registrar el certificado usando el contexto de autenticación
         try {
-          const token = localStorage.getItem('token');
+          console.log('🔍 Usuario autenticado:', !!user);
+          console.log('🔍 Estado de autenticación:', isAuthenticated);
+          console.log('🔍 ID del usuario:', user?.id);
+          
+          const token = localStorage.getItem('authToken');
           console.log('🔍 Token encontrado:', !!token);
           
-          if (token) {
-            console.log('📤 Enviando datos de certificado:', { folio: finalFolio, placas: placas });
+          if (token && user?.id) {
+            console.log('📤 Enviando datos de certificado:', { folio: finalFolio, placas: placas, userId: user.id });
             
             const trackResponse = await fetch('/.netlify/functions/track-certificate', {
               method: 'POST',
@@ -217,16 +224,19 @@ export function Form() {
               })
             });
 
-            const trackResult = await trackResponse.json();
-            console.log('📊 Respuesta del tracking:', trackResult);
-
             if (trackResponse.ok) {
-              console.log('✅ Certificado registrado exitosamente en la base de datos');
+              const trackResult = await trackResponse.json();
+              console.log('✅ Certificado registrado exitosamente:', trackResult);
             } else {
-              console.error('❌ Error en respuesta del tracking:', trackResult);
+              const trackError = await trackResponse.json();
+              console.error('❌ Error en respuesta del tracking:', trackError);
             }
           } else {
-            console.warn('⚠️ No se encontró token de usuario');
+            console.warn('⚠️ No se puede registrar certificado:', {
+              hasToken: !!token,
+              hasUser: !!user,
+              hasUserId: !!user?.id
+            });
           }
         } catch (err) {
           console.error('⚠️ Error registrando certificado:', err);
