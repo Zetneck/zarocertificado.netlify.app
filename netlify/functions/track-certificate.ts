@@ -96,57 +96,33 @@ export const handler: Handler = async (event) => {
       };
     }
 
-    // Verificar que el usuario exista - DEBUG EXTENDIDO
+    // Verificar que el usuario exista - Versión simplificada pero robusta
     console.log('🔍 Buscando usuario con ID:', decoded.id);
-    console.log('🔍 Tipo de ID:', typeof decoded.id);
-    console.log('🔍 Longitud de ID:', decoded.id.length);
+    console.log('🔍 Buscando usuario con email:', decoded.email);
     
-    // Probar consulta por ID exacto
-    const userResultById = await client.query(
+    // Primero intentar por ID
+    let userResult = await client.query(
       'SELECT id, email, name FROM users WHERE id = $1',
       [decoded.id]
     );
 
-    // Probar consulta por email como backup
-    const userResultByEmail = await client.query(
-      'SELECT id, email, name FROM users WHERE email = $1',
-      [decoded.email]
-    );
-
-    // Probar consulta por ID como string
-    const userResultByIdString = await client.query(
-      'SELECT id, email, name FROM users WHERE id::text = $1',
-      [decoded.id]
-    );
-
-    console.log('📊 Resultado de consultas usuario:', {
-      byId: {
-        rowsFound: userResultById.rows.length,
-        user: userResultById.rows[0] || null
-      },
-      byEmail: {
-        rowsFound: userResultByEmail.rows.length,
-        user: userResultByEmail.rows[0] || null
-      },
-      byIdString: {
-        rowsFound: userResultByIdString.rows.length,
-        user: userResultByIdString.rows[0] || null
-      }
-    });
-
-    // Usar el resultado que funcione
-    let userResult = userResultById;
-    if (userResultById.rows.length === 0 && userResultByEmail.rows.length > 0) {
-      console.log('⚠️ Usuario encontrado por email, no por ID - usando email como respaldo');
-      userResult = userResultByEmail;
-    } else if (userResultById.rows.length === 0 && userResultByIdString.rows.length > 0) {
-      console.log('⚠️ Usuario encontrado por ID como string - usando conversión string');
-      userResult = userResultByIdString;
+    // Si no encuentra por ID, intentar por email
+    if (userResult.rows.length === 0) {
+      console.log('⚠️ No encontrado por ID, intentando por email...');
+      userResult = await client.query(
+        'SELECT id, email, name FROM users WHERE email = $1',
+        [decoded.email]
+      );
     }
 
+    console.log('📊 Usuario encontrado:', {
+      found: userResult.rows.length > 0,
+      user: userResult.rows[0] || null,
+      searchMethod: userResult.rows.length > 0 ? (userResult.rows[0].id === decoded.id ? 'by-id' : 'by-email') : 'none'
+    });
+
     if (userResult.rows.length === 0) {
-      console.log('❌ Usuario no encontrado en base de datos con ID:', decoded.id);
-      console.log('❌ Tampoco encontrado por email:', decoded.email);
+      console.log('❌ Usuario no encontrado por ID ni por email');
       return {
         statusCode: 404,
         headers,
@@ -154,10 +130,7 @@ export const handler: Handler = async (event) => {
           error: 'Usuario no encontrado',
           debug: {
             searchedId: decoded.id,
-            searchedEmail: decoded.email,
-            foundById: userResultById.rows.length,
-            foundByEmail: userResultByEmail.rows.length,
-            foundByIdString: userResultByIdString.rows.length
+            searchedEmail: decoded.email
           }
         })
       };
@@ -195,11 +168,24 @@ export const handler: Handler = async (event) => {
     };
 
   } catch (error) {
-    console.error('Error al registrar certificado:', error);
+    console.error('❌ Error completo al registrar certificado:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
+    
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Error interno del servidor' })
+      body: JSON.stringify({ 
+        error: 'Error interno del servidor',
+        details: process.env.NODE_ENV === 'development' ? {
+          message: error.message,
+          stack: error.stack
+        } : {
+          message: error.message
+        }
+      })
     };
   } finally {
     if (client) {
