@@ -252,20 +252,52 @@ export function Form() {
           finalFolio,
           placas,
           result.fileName || 'certificado.pdf',
-          // Acción de descarga - el PDF ya se descargó, pero podemos implementar re-descarga si es necesario
-          () => {
-            showNotification('PDF ya descargado automáticamente', 'info', { duration: 3000 });
+          // Acción de descarga - re-generar y descargar el PDF
+          async () => {
+            try {
+              const newResult = await generatePDF({
+                folio: finalFolio,
+                remolque,
+                placas,
+                fechaInicio: fechaInicio?.format('DD/MM/YYYY') || '',
+                fechaFinal: fechaFinal?.format('DD/MM/YYYY') || ''
+              });
+              
+              if (newResult.success) {
+                showNotification('PDF re-descargado exitosamente', 'success', { duration: 3000 });
+              }
+            } catch (err) {
+              showNotification('Error al re-descargar el PDF', 'error', { duration: 4000 });
+              console.error('Error re-descargando PDF:', err);
+            }
           },
-          // Acción de ver certificado - generar nuevo PDF para vista
-          () => {
-            showNotification('Generando nueva vista del certificado...', 'info', { duration: 3000 });
-            // Aquí podrías implementar lógica para re-generar y mostrar el PDF
+          // Acción de ver certificado - re-generar y abrir en nueva pestaña  
+          async () => {
+            try {
+              const newResult = await generatePDF({
+                folio: finalFolio,
+                remolque,
+                placas,
+                fechaInicio: fechaInicio?.format('DD/MM/YYYY') || '',
+                fechaFinal: fechaFinal?.format('DD/MM/YYYY') || ''
+              });
+              
+              if (newResult.success) {
+                // El PDF se abre automáticamente al generarse
+                showNotification('Abriendo certificado en nueva pestaña', 'info', { duration: 2000 });
+              }
+            } catch (err) {
+              showNotification('Error al abrir el certificado', 'error', { duration: 4000 });
+              console.error('Error abriendo certificado:', err);
+            }
           },
           // Acción de generar otro certificado
           () => {
-            // Ya se limpia el formulario automáticamente después de esta sección
             window.scrollTo({ top: 0, behavior: 'smooth' });
-            showNotification('Formulario listo para nuevo certificado', 'success', { duration: 2000 });
+            showNotification('Listo para generar nuevo certificado', 'info', { 
+              duration: 2000,
+              title: 'Formulario preparado' 
+            });
           }
         );
 

@@ -176,16 +176,37 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
             <Alert 
               onClose={() => handleClose(notification.id)} 
               severity={notification.severity}
-              variant="filled"
+              variant="outlined"
               icon={getNotificationIcon(notification.severity)}
               sx={{
                 minWidth: 400,
                 maxWidth: 500,
-                boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
-                borderRadius: 2,
+                // Diseño elegante coherente con el tema de la aplicación
+                background: (theme) => theme.palette.mode === 'dark' 
+                  ? 'linear-gradient(135deg, rgba(15, 23, 42, 0.95) 0%, rgba(30, 41, 59, 0.95) 100%)'
+                  : 'linear-gradient(135deg, rgba(248, 250, 252, 0.95) 0%, rgba(241, 245, 249, 0.95) 100%)',
+                backdropFilter: 'blur(20px)',
+                border: (theme) => notification.severity === 'success' 
+                  ? `1px solid ${theme.palette.mode === 'dark' ? 'rgba(34, 197, 94, 0.3)' : 'rgba(34, 197, 94, 0.2)'}`
+                  : `1px solid ${theme.palette.divider}`,
+                borderRadius: 3,
+                boxShadow: (theme) => theme.palette.mode === 'dark'
+                  ? '0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.1), inset 0 1px 0 0 rgba(255, 255, 255, 0.05)'
+                  : '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), inset 0 1px 0 0 rgba(255, 255, 255, 0.6)',
+                color: (theme) => theme.palette.text.primary,
                 '& .MuiAlert-message': {
                   width: '100%',
-                  padding: 0
+                  padding: 0,
+                  color: (theme) => theme.palette.text.primary
+                },
+                '& .MuiAlert-icon': {
+                  color: notification.severity === 'success' 
+                    ? 'rgb(34, 197, 94)' 
+                    : notification.severity === 'error' 
+                    ? 'rgb(239, 68, 68)'
+                    : notification.severity === 'warning'
+                    ? 'rgb(245, 158, 11)'
+                    : 'rgb(59, 130, 246)'
                 }
               }}
             >
@@ -221,11 +242,16 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                           label={`Folio: ${notification.metadata.folio}`}
                           variant="outlined"
                           sx={{ 
-                            backgroundColor: 'rgba(255,255,255,0.2)',
-                            color: 'inherit',
-                            borderColor: 'rgba(255,255,255,0.3)',
+                            backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                              ? 'rgba(99, 102, 241, 0.1)' 
+                              : 'rgba(99, 102, 241, 0.05)',
+                            color: 'rgb(99, 102, 241)',
+                            borderColor: 'rgba(99, 102, 241, 0.3)',
                             fontSize: '0.75rem',
-                            height: 24
+                            height: 26,
+                            '& .MuiChip-label': {
+                              fontWeight: 500
+                            }
                           }}
                         />
                       )}
@@ -235,11 +261,16 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
                           label={`Placas: ${notification.metadata.placas}`}
                           variant="outlined"
                           sx={{ 
-                            backgroundColor: 'rgba(255,255,255,0.2)',
-                            color: 'inherit',
-                            borderColor: 'rgba(255,255,255,0.3)',
+                            backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                              ? 'rgba(34, 197, 94, 0.1)' 
+                              : 'rgba(34, 197, 94, 0.05)',
+                            color: 'rgb(34, 197, 94)',
+                            borderColor: 'rgba(34, 197, 94, 0.3)',
                             fontSize: '0.75rem',
-                            height: 24
+                            height: 26,
+                            '& .MuiChip-label': {
+                              fontWeight: 500
+                            }
                           }}
                         />
                       )}
@@ -276,20 +307,45 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
 
                 {/* Actions */}
                 {notification.actions && notification.actions.length > 0 && (
-                  <Box sx={{ mt: 1.5, pt: 1.5, borderTop: '1px solid rgba(255,255,255,0.2)' }}>
+                  <Box sx={{ mt: 2, pt: 2, borderTop: (theme) => `1px solid ${theme.palette.divider}` }}>
                     <ButtonGroup 
                       size="small" 
                       variant="outlined"
                       sx={{
                         '& .MuiButton-root': {
-                          borderColor: 'rgba(255,255,255,0.3)',
-                          color: 'inherit',
+                          borderColor: (theme) => theme.palette.divider,
+                          color: (theme) => theme.palette.text.primary,
                           fontSize: '0.75rem',
-                          padding: '4px 8px',
+                          padding: '6px 12px',
                           minWidth: 'auto',
+                          fontWeight: 500,
+                          textTransform: 'none',
+                          backdropFilter: 'blur(10px)',
+                          transition: 'all 0.2s ease-in-out',
                           '&:hover': {
-                            backgroundColor: 'rgba(255,255,255,0.1)',
-                            borderColor: 'rgba(255,255,255,0.5)'
+                            backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                              ? 'rgba(99, 102, 241, 0.1)' 
+                              : 'rgba(99, 102, 241, 0.05)',
+                            borderColor: 'rgba(99, 102, 241, 0.5)',
+                            color: 'rgb(99, 102, 241)',
+                            transform: 'translateY(-1px)',
+                            boxShadow: '0 4px 12px rgba(99, 102, 241, 0.15)'
+                          },
+                          '&:first-of-type:hover': {
+                            backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                              ? 'rgba(34, 197, 94, 0.1)' 
+                              : 'rgba(34, 197, 94, 0.05)',
+                            borderColor: 'rgba(34, 197, 94, 0.5)',
+                            color: 'rgb(34, 197, 94)',
+                            boxShadow: '0 4px 12px rgba(34, 197, 94, 0.15)'
+                          },
+                          '&:last-of-type:hover': {
+                            backgroundColor: (theme) => theme.palette.mode === 'dark' 
+                              ? 'rgba(168, 85, 247, 0.1)' 
+                              : 'rgba(168, 85, 247, 0.05)',
+                            borderColor: 'rgba(168, 85, 247, 0.5)',
+                            color: 'rgb(168, 85, 247)',
+                            boxShadow: '0 4px 12px rgba(168, 85, 247, 0.15)'
                           }
                         }
                       }}
