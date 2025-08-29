@@ -161,11 +161,16 @@ export const NotificationProvider = ({ children }: NotificationProviderProps) =>
             open={true}
             autoHideDuration={notification.duration || null}
             onClose={() => handleClose(notification.id)}
-            anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+            anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
             sx={{
               '& .MuiSnackbarContent-root': {
                 padding: 0,
-              }
+              },
+              // Asegurar que no tape las notificaciones de descarga del navegador
+              zIndex: (theme) => theme.zIndex.snackbar - 1,
+              // Margen desde el borde para que no tape las descargas
+              marginRight: 2,
+              marginBottom: 2
             }}
           >
             <Alert 
