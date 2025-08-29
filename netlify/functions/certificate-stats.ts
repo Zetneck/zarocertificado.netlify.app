@@ -30,7 +30,7 @@ export const handler: Handler = async (event) => {
     };
   }
 
-  // Verificar autenticación
+  // Verificar autenticación y que sea admin
   const authHeader = event.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return {
@@ -43,11 +43,11 @@ export const handler: Handler = async (event) => {
   const token = authHeader.substring(7);
   const decoded = verifyToken(token);
   
-  if (!decoded) {
+  if (!decoded || decoded.role !== 'admin') {
     return {
-      statusCode: 401,
+      statusCode: 403,
       headers,
-      body: JSON.stringify({ error: 'Token inválido' })
+      body: JSON.stringify({ error: 'Acceso denegado - se requiere rol de administrador' })
     };
   }
 
@@ -63,50 +63,55 @@ export const handler: Handler = async (event) => {
     
     await client.connect();
     
-    // Buscar usuario específico del token
-    const userResult = await client.query(
-      'SELECT id, email, name, created_at FROM users WHERE id = $1',
-      [decoded.id]
-    );
+    // Contar todos los certificados
+    const totalCertificates = await client.query('SELECT COUNT(*) FROM certificate_usage');
+    
+    // Contar por usuario
+    const certificatesByUser = await client.query(`
+      SELECT 
+        u.id,
+        u.email,
+        u.name,
+        COUNT(cu.id) as certificate_count
+      FROM users u
+      LEFT JOIN certificate_usage cu ON u.id = cu.user_id
+      GROUP BY u.id, u.email, u.name
+      ORDER BY certificate_count DESC
+    `);
 
-    // Buscar todos los usuarios con un email similar
-    const similarUsersResult = await client.query(
-      'SELECT id, email, name, created_at FROM users WHERE email = $1',
-      [decoded.email]
-    );
-
-    // Obtener algunos usuarios para comparar formato de IDs
-    const sampleUsersResult = await client.query(
-      'SELECT id, email, name, created_at FROM users ORDER BY created_at DESC LIMIT 5'
-    );
+    // Últimos certificados generados
+    const recentCertificates = await client.query(`
+      SELECT 
+        cu.folio,
+        cu.placas,
+        cu.created_at,
+        u.email,
+        u.name
+      FROM certificate_usage cu
+      JOIN users u ON cu.user_id = u.id
+      ORDER BY cu.created_at DESC
+      LIMIT 10
+    `);
 
     return {
       statusCode: 200,
       headers,
       body: JSON.stringify({
-        message: 'Debug de usuario',
-        tokenData: {
-          id: decoded.id,
-          email: decoded.email,
-          role: decoded.role
-        },
-        userById: userResult.rows[0] || null,
-        usersByEmail: similarUsersResult.rows,
-        sampleUsers: sampleUsersResult.rows,
-        counts: {
-          userById: userResult.rows.length,
-          usersByEmail: similarUsersResult.rows.length,
-          totalUsers: await client.query('SELECT COUNT(*) FROM users').then(r => r.rows[0].count)
+        message: 'Estadísticas de certificados',
+        data: {
+          totalCertificates: parseInt(totalCertificates.rows[0].count),
+          userStats: certificatesByUser.rows,
+          recentCertificates: recentCertificates.rows
         }
       })
     };
 
   } catch (error) {
-    console.error('Error en debug-user:', error);
+    console.error('Error obteniendo estadísticas:', error);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ error: 'Error interno del servidor', details: error.message })
+      body: JSON.stringify({ error: 'Error interno del servidor' })
     };
   } finally {
     if (client) {
