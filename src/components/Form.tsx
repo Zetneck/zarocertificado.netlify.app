@@ -200,8 +200,12 @@ export function Form() {
         // Registrar el certificado en la base de datos
         try {
           const token = localStorage.getItem('token');
+          console.log('🔍 Token encontrado:', !!token);
+          
           if (token) {
-            await fetch('/.netlify/functions/track-certificate', {
+            console.log('📤 Enviando datos de certificado:', { folio: finalFolio, placas: placas });
+            
+            const trackResponse = await fetch('/.netlify/functions/track-certificate', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -212,10 +216,20 @@ export function Form() {
                 placas: placas
               })
             });
-            console.log('✅ Certificado registrado en la base de datos');
+
+            const trackResult = await trackResponse.json();
+            console.log('📊 Respuesta del tracking:', trackResult);
+
+            if (trackResponse.ok) {
+              console.log('✅ Certificado registrado exitosamente en la base de datos');
+            } else {
+              console.error('❌ Error en respuesta del tracking:', trackResult);
+            }
+          } else {
+            console.warn('⚠️ No se encontró token de usuario');
           }
         } catch (err) {
-          console.warn('⚠️ Error registrando certificado:', err);
+          console.error('⚠️ Error registrando certificado:', err);
           // No afectar el flujo principal si falla el registro
         }
 
