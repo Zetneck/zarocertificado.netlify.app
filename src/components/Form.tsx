@@ -197,6 +197,28 @@ export function Form() {
       const result = await generatePDF(data);
 
       if (result.success) {
+        // Registrar el certificado en la base de datos
+        try {
+          const token = localStorage.getItem('token');
+          if (token) {
+            await fetch('/.netlify/functions/track-certificate', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+              },
+              body: JSON.stringify({
+                folio: finalFolio,
+                placas: placas
+              })
+            });
+            console.log('✅ Certificado registrado en la base de datos');
+          }
+        } catch (err) {
+          console.warn('⚠️ Error registrando certificado:', err);
+          // No afectar el flujo principal si falla el registro
+        }
+
         setAlert({
           message: `PDF generado exitosamente con folio ${finalFolio}: ${result.fileName || 'certificado.pdf'}`,
           severity: 'success'
