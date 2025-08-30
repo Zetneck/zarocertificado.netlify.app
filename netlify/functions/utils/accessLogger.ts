@@ -157,8 +157,6 @@ function parseUserAgent(userAgent: string): { device: string; browser: string } 
   }
 
   const ua = userAgent.toLowerCase();
-  console.log('Parsing User Agent:', userAgent);
-  
   // Detectar dispositivo más específico
   let device = 'Desktop';
   if (ua.includes('iphone')) {
@@ -209,7 +207,6 @@ function parseUserAgent(userAgent: string): { device: string; browser: string } 
     browser = 'Internet Explorer';
   }
   
-  console.log('Detected device:', device, 'browser:', browser);
   return { device, browser };
 }
 

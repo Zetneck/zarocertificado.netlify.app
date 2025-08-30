@@ -228,9 +228,11 @@ export function AccessHistory({ open, onClose }: AccessHistoryProps) {
             Últimos {accessLogs.length} accesos
           </Typography>
           <Tooltip title="Actualizar">
-            <IconButton size="small" onClick={fetchAccessHistory}>
-              <Refresh />
-            </IconButton>
+            <Box>
+              <IconButton size="small" onClick={fetchAccessHistory}>
+                <Refresh />
+              </IconButton>
+            </Box>
           </Tooltip>
         </Box>
 
@@ -285,10 +287,12 @@ export function AccessHistory({ open, onClose }: AccessHistoryProps) {
                         }}>
                           {log.twoFactorUsed && (
                             <Tooltip title="Autenticación de dos factores utilizada">
-                              <Shield sx={{ 
-                                fontSize: 16, 
-                                color: 'success.main' 
-                              }} />
+                              <Box>
+                                <Shield sx={{ 
+                                  fontSize: 16, 
+                                  color: 'success.main' 
+                                }} />
+                              </Box>
                             </Tooltip>
                           )}
                           

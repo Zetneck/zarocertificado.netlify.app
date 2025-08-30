@@ -21,7 +21,7 @@ import {
   LocalShipping,
   Assignment,
   CheckCircle,
-  Error,
+  Error as ErrorIcon,
   Schedule,
   AutoAwesome
 } from '@mui/icons-material';
@@ -455,69 +455,75 @@ export function Form() {
         {/* Datos básicos en grid */}
         <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr 1fr' }, gap: 1.5 }}>
           <Tooltip title="Número de folio generado automáticamente" arrow>
-            <TextField 
-              label="Folio (Automático)" 
-              value={folio} 
-              fullWidth 
-              required
-              size="small"
-              disabled={true}
-              error={showValidation && !folio}
-              helperText={folio ? 'Folio generado automáticamente' : 'Cargando folio...'}
-              InputProps={{
-                readOnly: true,
-                startAdornment: <InputAdornment position="start"><Badge sx={{ fontSize: '1rem' }} /></InputAdornment>,
-              }}
-              sx={{ 
-                '& .MuiInputBase-input': { 
-                  fontSize: '0.875rem', 
-                  color: 'text.primary'
-                }, 
-                '& .MuiInputLabel-root': { 
-                  fontSize: '0.875rem'
-                }
-              }}
-            />
+            <Box>
+              <TextField 
+                label="Folio (Automático)" 
+                value={folio} 
+                fullWidth 
+                required
+                size="small"
+                disabled={true}
+                error={showValidation && !folio}
+                helperText={folio ? 'Folio generado automáticamente' : 'Cargando folio...'}
+                InputProps={{
+                  readOnly: true,
+                  startAdornment: <InputAdornment position="start"><Badge sx={{ fontSize: '1rem' }} /></InputAdornment>,
+                }}
+                sx={{ 
+                  '& .MuiInputBase-input': { 
+                    fontSize: '0.875rem', 
+                    color: 'text.primary'
+                  }, 
+                  '& .MuiInputLabel-root': { 
+                    fontSize: '0.875rem'
+                  }
+                }}
+              />
+            </Box>
           </Tooltip>
 
           <Tooltip title="ID del remolque" arrow>
-            <TextField 
-              label="Remolque" 
-              value={remolque} 
-              onChange={(e) => setRemolque(e.target.value)} 
-              fullWidth 
-              required
-              size="small"
-              error={showValidation && !remolque}
-              helperText={showValidation && !remolque ? 'Requerido' : ''}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><LocalShipping sx={{ fontSize: '1rem' }} /></InputAdornment>,
-              }}
-              sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' }, '& .MuiInputLabel-root': { fontSize: '0.875rem' } }}
-            />
+            <Box>
+              <TextField 
+                label="Remolque" 
+                value={remolque} 
+                onChange={(e) => setRemolque(e.target.value)} 
+                fullWidth 
+                required
+                size="small"
+                error={showValidation && !remolque}
+                helperText={showValidation && !remolque ? 'Requerido' : ''}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start"><LocalShipping sx={{ fontSize: '1rem' }} /></InputAdornment>,
+                }}
+                sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' }, '& .MuiInputLabel-root': { fontSize: '0.875rem' } }}
+              />
+            </Box>
           </Tooltip>
 
           <Tooltip title="Placas del vehículo" arrow>
-            <TextField 
-              label="Placas" 
-              value={placas} 
-              onChange={(e) => setPlacas(e.target.value)} 
-              fullWidth 
-              required
-              size="small"
-              error={showValidation && !placas}
-              helperText={showValidation && !placas ? 'Requerido' : ''}
-              InputProps={{
-                startAdornment: <InputAdornment position="start"><Assignment sx={{ fontSize: '1rem' }} /></InputAdornment>,
-              }}
-              sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' }, '& .MuiInputLabel-root': { fontSize: '0.875rem' } }}
-            />
+            <Box>
+              <TextField 
+                label="Placas" 
+                value={placas} 
+                onChange={(e) => setPlacas(e.target.value)} 
+                fullWidth 
+                required
+                size="small"
+                error={showValidation && !placas}
+                helperText={showValidation && !placas ? 'Requerido' : ''}
+                InputProps={{
+                  startAdornment: <InputAdornment position="start"><Assignment sx={{ fontSize: '1rem' }} /></InputAdornment>,
+                }}
+                sx={{ '& .MuiInputBase-input': { fontSize: '0.875rem' }, '& .MuiInputLabel-root': { fontSize: '0.875rem' } }}
+              />
+            </Box>
           </Tooltip>
         </Box>
 
-        {/* Fechas compactas */}
-        <Box sx={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 1.5 }}>
-          <Tooltip title="Fecha de inicio" arrow>
+        {/* Fechas en la misma línea - APLICADO */}
+        <Box sx={{ display: 'flex', gap: 2, width: '100%' }}>
+          <Box sx={{ flex: 1 }}>
             <DatePicker
               label="Inicio"
               value={fechaInicio}
@@ -529,20 +535,17 @@ export function Form() {
                   size: 'small',
                   error: showValidation && !fechaInicio,
                   helperText: showValidation && !fechaInicio ? 'Requerido' : '',
-                  sx: { '& .MuiInputBase-input': { fontSize: '0.875rem' }, '& .MuiInputLabel-root': { fontSize: '0.875rem' } }
+                  sx: { 
+                    width: '100%',
+                    '& .MuiInputBase-input': { fontSize: '0.875rem' }, 
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' } 
+                  }
                 }
               }}
             />
-          </Tooltip>
+          </Box>
           
-          <Tooltip 
-            title={
-              validityOption === 'option-a' || validityOption === 'option-c' 
-                ? 'Calculada automáticamente' 
-                : 'Debe ser exactamente 30 días después'
-            } 
-            arrow
-          >
+          <Box sx={{ flex: 1 }}>
             <DatePicker
               label="Expiración"
               value={fechaFinal}
@@ -559,21 +562,42 @@ export function Form() {
                       ? 'Requerido' 
                       : showValidation && validityOption === 'option-b' && !is30DaysValid
                         ? 'Debe ser 30 días'
-                        : validityOption === 'option-a' || validityOption === 'option-c'
-                          ? 'Auto'
-                          : '',
-                  sx: { '& .MuiInputBase-input': { fontSize: '0.875rem' }, '& .MuiInputLabel-root': { fontSize: '0.875rem' } }
+                        : '',
+                  sx: { 
+                    width: '100%',
+                    '& .MuiInputBase-input': { fontSize: '0.875rem' }, 
+                    '& .MuiInputLabel-root': { fontSize: '0.875rem' },
+                    '& .MuiFormHelperText-root': {
+                      marginTop: '3px',
+                      marginLeft: 0,
+                      fontSize: '0.75rem'
+                    }
+                  }
                 }
               }}
             />
-          </Tooltip>
+            {(validityOption === 'option-a' || validityOption === 'option-c') && (
+              <Typography 
+                variant="caption" 
+                sx={{ 
+                  color: 'rgba(255, 255, 255, 0.6)', 
+                  fontSize: '0.75rem',
+                  marginTop: '3px',
+                  marginLeft: '14px',
+                  display: 'block'
+                }}
+              >
+                Fecha generada automáticamente
+              </Typography>
+            )}
+          </Box>
         </Box>
 
         {/* Info de duración compacta */}
         {fechaInicio && fechaFinal && (
           <Alert 
             severity={is30DaysValid ? 'success' : 'warning'}
-            icon={is30DaysValid ? <CheckCircle sx={{ fontSize: '1rem' }} /> : <Error sx={{ fontSize: '1rem' }} />}
+            icon={is30DaysValid ? <CheckCircle sx={{ fontSize: '1rem' }} /> : <ErrorIcon sx={{ fontSize: '1rem' }} />}
             sx={{ py: 0.5, fontSize: '0.75rem', '& .MuiAlert-message': { fontSize: '0.75rem' } }}
           >
             Duración: {fechaFinal.diff(fechaInicio, 'day')} días

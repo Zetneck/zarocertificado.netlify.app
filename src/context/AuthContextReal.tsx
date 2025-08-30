@@ -394,7 +394,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({ email, password }),
       });
 
-  const data = await response.json();
+      // Definir el tipo de respuesta esperado
+      interface LoginResponse {
+        error?: string;
+        message?: string;
+        requiresSetup2FA?: boolean;
+        requiresTwoFactor?: boolean;
+        tempToken?: string;
+        token?: string;
+        user?: User;
+      }
+
+      // Verificar si la respuesta tiene contenido antes de parsear JSON
+      let data: LoginResponse = {};
+      const contentType = response.headers.get('content-type');
+      const responseText = await response.text();
+      
+      console.log('🔍 Respuesta completa del servidor:', {
+        status: response.status,
+        statusText: response.statusText,
+        contentType,
+        responseText,
+        headers: Object.fromEntries(response.headers.entries())
+      });
+      
+      if (contentType && contentType.includes('application/json') && responseText) {
+        try {
+          data = JSON.parse(responseText);
+        } catch (jsonError) {
+          console.error('❌ Error parsing JSON:', jsonError, 'Response text:', responseText);
+          data = { error: 'Error de formato en la respuesta del servidor' };
+        }
+      } else {
+        console.log('⚠️ Respuesta sin JSON válido:', { contentType, responseText });
+        data = { error: responseText || 'Respuesta vacía del servidor' };
+      }
       
       console.log('📡 Respuesta del servidor:', { 
         ok: response.ok, 
@@ -423,14 +457,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('user');
         
         // Guardar datos temporales para setup
-        setTempUser(data.user);
+        if (data.user) {
+          setTempUser(data.user);
+        }
         setRequiresSetup2FA(true);
         setRequiresTwoFactor(false);
         setIsAuthenticated(false);
         setUser(null);
         
-        localStorage.setItem('tempToken', data.tempToken);
-        localStorage.setItem('tempUser', JSON.stringify(data.user));
+        if (data.tempToken) {
+          localStorage.setItem('tempToken', data.tempToken);
+        }
+        if (data.user) {
+          localStorage.setItem('tempUser', JSON.stringify(data.user));
+        }
         
         return { success: true, requiresSetup2FA: true };
       }
@@ -444,13 +484,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         localStorage.removeItem('user');
         
         // Guardar datos temporales para el proceso 2FA
-        setTempUser(data.user || { email }); // En caso de que no venga user completo
+        if (data.user) {
+          setTempUser(data.user);
+        } else {
+          // Crear user temporal básico si no viene completo
+          const tempUserData: User = {
+            id: '',
+            email,
+            name: '',
+            role: 'user' as const,
+            twoFactorEnabled: false,
+            createdAt: new Date().toISOString()
+          };
+          setTempUser(tempUserData);
+        }
         setRequiresTwoFactor(true);
         setRequiresSetup2FA(false);
         setIsAuthenticated(false);
         setUser(null);
         
-        localStorage.setItem('tempToken', data.tempToken);
+        if (data.tempToken) {
+          localStorage.setItem('tempToken', data.tempToken);
+        }
         if (data.user) {
           localStorage.setItem('tempUser', JSON.stringify(data.user));
         }
@@ -464,6 +519,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Limpiar cualquier proceso previo
       localStorage.removeItem('tempToken');
       localStorage.removeItem('tempUser');
+      
+      // Validar que tengamos token y user antes de continuar
+      if (!data.token || !data.user) {
+        setLoading(false);
+        return { 
+          success: false, 
+          message: 'Respuesta incompleta del servidor',
+          requiresTwoFactor: false 
+        };
+      }
       
       // Login directo
       localStorage.setItem('authToken', data.token);

@@ -39,14 +39,14 @@ export function RightSidebar() {
     <Box sx={{ 
       display: 'flex',
       flexDirection: 'column',
-      gap: { xs: 2, sm: 3 },
+      gap: { xs: 1, sm: 1.5 },
       height: '100%'
     }}>
       {/* Progreso del formulario */}
       <Paper 
         elevation={2}
         sx={{ 
-          p: 2, 
+          p: 1.5, 
           backgroundColor: isDark 
             ? 'rgba(30, 41, 59, 0.95)' 
             : 'rgba(248, 250, 252, 0.95)',
@@ -65,21 +65,22 @@ export function RightSidebar() {
             gap: 1,
             color: theme.palette.primary.main,
             fontWeight: 700,
-            fontSize: '1.1rem'
+            fontSize: '1rem',
+            mb: 1
           }}
         >
           <Timeline 
-            sx={{ color: theme.palette.primary.main }}
+            sx={{ color: theme.palette.primary.main, fontSize: '1rem' }}
           />
           PROGRESO FORMULARIO
         </Typography>
-        <Box sx={{ mb: 2 }}>
+        <Box sx={{ mb: 1.5 }}>
           <LinearProgress 
             variant="determinate" 
             value={progress} 
             sx={{ 
-              height: 8, 
-              borderRadius: 4,
+              height: 6, 
+              borderRadius: 3,
               backgroundColor: 'rgba(0, 0, 0, 0.1)'
             }}
           />
@@ -88,7 +89,8 @@ export function RightSidebar() {
           variant="body2" 
           sx={{ 
             color: theme.palette.text.secondary,
-            fontWeight: 500
+            fontWeight: 500,
+            fontSize: '0.8rem'
           }}
         >
           {completedFields} de {fields.length} campos completados ({Math.round(progress)}%)
@@ -99,7 +101,7 @@ export function RightSidebar() {
       <Paper 
         elevation={2}
         sx={{ 
-          p: 2,
+          p: 1,
           flex: 1,
           backgroundColor: isDark 
             ? 'rgba(30, 41, 59, 0.95)' 
@@ -121,15 +123,18 @@ export function RightSidebar() {
             gap: 1,
             color: theme.palette.primary.main,
             fontWeight: 700,
-            fontSize: { xs: '0.95rem', sm: '1.1rem' }
+            fontSize: { xs: '0.9rem', sm: '1rem' }
           }}
         >
           <Description 
-            sx={{ color: theme.palette.primary.main }}
+            sx={{ color: theme.palette.primary.main, fontSize: '1rem' }}
           />
           VISTA PREVIA DEL CERTIFICADO
         </Typography>
-        <Box sx={{ flex: 1, overflow: 'auto' }}>
+        <Box sx={{ 
+          flex: 1, 
+          overflow: 'auto'
+        }}>
           <PreviewDisplay />
         </Box>
       </Paper>
@@ -138,7 +143,7 @@ export function RightSidebar() {
       <Paper 
         elevation={2}
         sx={{ 
-          p: 2, 
+          p: 1.5, 
           backgroundColor: isDark 
             ? 'rgba(30, 41, 59, 0.95)' 
             : 'rgba(248, 250, 252, 0.95)',
@@ -157,21 +162,22 @@ export function RightSidebar() {
             gap: 1,
             color: theme.palette.primary.main,
             fontWeight: 700,
-            fontSize: '1.1rem'
+            fontSize: '1rem',
+            mb: 1
           }}
         >
           <Info 
-            sx={{ color: theme.palette.primary.main }}
+            sx={{ color: theme.palette.primary.main, fontSize: '1rem' }}
           />
           INFORMACIÓN DEL CERTIFICADO
         </Typography>
         <List sx={{ p: 0 }}>
-          <ListItem sx={{ py: 0.5, display: 'flex', alignItems: 'center' }}>
+          <ListItem sx={{ py: 0.3, display: 'flex', alignItems: 'center' }}>
             <CheckCircle 
               sx={{ 
                 color: theme.palette.success.main, 
-                mr: 1.5, 
-                fontSize: '1.1rem' 
+                mr: 1, 
+                fontSize: '1rem' 
               }} 
             />
             <Box 
@@ -180,7 +186,7 @@ export function RightSidebar() {
               data-theme={isDark ? 'dark' : 'light'}
               style={{
                 color: isDark ? '#FFFFFF' : '#1e293b',
-                fontSize: '0.875rem',
+                fontSize: '0.8rem',
                 fontWeight: 500,
                 fontFamily: '"Inter", "Roboto", sans-serif',
                 display: 'inline-block'
@@ -190,12 +196,12 @@ export function RightSidebar() {
             </Box>
           </ListItem>
           
-          <ListItem sx={{ py: 0.5, display: 'flex', alignItems: 'center' }}>
+          <ListItem sx={{ py: 0.3, display: 'flex', alignItems: 'center' }}>
             <Security 
               sx={{ 
                 color: theme.palette.primary.main, 
-                mr: 1.5, 
-                fontSize: '1.1rem' 
+                mr: 1, 
+                fontSize: '1rem' 
               }} 
             />
             <Box 
@@ -204,7 +210,7 @@ export function RightSidebar() {
               data-theme={isDark ? 'dark' : 'light'}
               style={{
                 color: isDark ? '#FFFFFF' : '#1e293b',
-                fontSize: '0.875rem',
+                fontSize: '0.8rem',
                 fontWeight: 500,
                 fontFamily: '"Inter", "Roboto", sans-serif',
                 display: 'inline-block'
@@ -215,15 +221,15 @@ export function RightSidebar() {
           </ListItem>
           
           {vigenciaInfo && (
-            <ListItem sx={{ py: 0.5, display: 'flex', alignItems: 'center' }}>
+            <ListItem sx={{ py: 0.3, display: 'flex', alignItems: 'center' }}>
               <Chip 
                 label={`${vigenciaInfo.diasRestantes} días restantes`}
                 color={vigenciaInfo.estado === 'vigente' ? 'success' : 'error'}
                 size="small"
                 sx={{ 
-                  mr: 1.5,
+                  mr: 1,
                   fontWeight: 600,
-                  fontSize: '0.75rem'
+                  fontSize: '0.7rem'
                 }}
               />
               <Box 
@@ -234,7 +240,7 @@ export function RightSidebar() {
                   color: vigenciaInfo.estado === 'vigente' 
                     ? (isDark ? '#22c55e' : '#16a34a')
                     : (isDark ? '#ef4444' : '#dc2626'),
-                  fontSize: '0.875rem',
+                  fontSize: '0.8rem',
                   fontWeight: 600,
                   fontFamily: '"Inter", "Roboto", sans-serif',
                   display: 'inline-block'
@@ -245,12 +251,12 @@ export function RightSidebar() {
             </ListItem>
           )}
           
-          <ListItem sx={{ py: 0.5, display: 'flex', alignItems: 'center' }}>
+          <ListItem sx={{ py: 0.3, display: 'flex', alignItems: 'center' }}>
             <AccessTime 
               sx={{ 
                 color: theme.palette.warning.main, 
-                mr: 1.5, 
-                fontSize: '1.1rem' 
+                mr: 1, 
+                fontSize: '1rem' 
               }} 
             />
             <Box 
@@ -259,7 +265,7 @@ export function RightSidebar() {
               data-theme={isDark ? 'dark' : 'light'}
               style={{
                 color: isDark ? '#FFFFFF' : '#1e293b',
-                fontSize: '0.875rem',
+                fontSize: '0.8rem',
                 fontWeight: 500,
                 fontFamily: '"Inter", "Roboto", sans-serif',
                 display: 'inline-block'
