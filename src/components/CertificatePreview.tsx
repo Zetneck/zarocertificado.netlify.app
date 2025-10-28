@@ -132,49 +132,10 @@ export function CertificatePreview({
               Folio: {folio || '[Folio]'}
             </Box>
           </Box>
-          
-          {/* Logo mejorado */}
-          <Box sx={{ 
-            position: 'relative',
-            ml: 2,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}>
-            <Box
-              component="img"
-              src="/logo.png"
-              alt="PROGILSA"
-              sx={{
-                maxWidth: '100px',
-                maxHeight: '100px',
-                objectFit: 'contain'
-              }}
-              onError={(e) => {
-                const target = e.target as HTMLImageElement;
-                target.style.display = 'none';
-                if (target.parentElement) {
-                  target.parentElement.innerHTML = `
-                    <div style="
-                      font-size: 16px; 
-                      text-align: center; 
-                      color: #667eea; 
-                      font-weight: bold;
-                      border: 2px solid #667eea;
-                      padding: 20px;
-                      border-radius: 8px;
-                    ">
-                      PROGILSA
-                    </div>
-                  `;
-                }
-              }}
-            />
-          </Box>
         </Box>
 
         {/* Divider elegante */}
-        <Divider sx={{ 
+        <Divider sx={{
           mb: 1,
           background: 'linear-gradient(90deg, transparent 0%, #667eea 20%, #764ba2 80%, transparent 100%)',
           height: '2px',

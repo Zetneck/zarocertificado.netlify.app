@@ -198,31 +198,9 @@ export function LoginForm() {
         }}
       >
         <Box sx={{ textAlign: 'center', mb: { xs: 2, sm: 3 } }}>
-          {/* Logo de Zaro */}
-          <Box
-            component="img"
-            src="/Logo-Zaro.png"
-            alt="Logo Zaro"
+          <Typography
+            variant="h4"
             sx={{
-              height: { xs: 40, sm: 50, md: 60 },
-              width: 'auto',
-              maxWidth: { xs: '250px', sm: '300px' },
-              objectFit: 'contain',
-              filter: theme.palette.mode === 'dark' 
-                ? 'brightness(1.1) drop-shadow(0 0 20px rgba(129, 140, 248, 0.4)) invert(0) contrast(1.1) saturate(1.2)' 
-                : 'drop-shadow(0 2px 8px rgba(99, 102, 241, 0.2)) invert(1) contrast(1) saturate(1)',
-              transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-              mb: { xs: 1, sm: 2 }
-            }}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-            }}
-          />
-          
-          <Typography 
-            variant="h4" 
-            sx={{ 
               fontWeight: 700,
               fontSize: { xs: '1.2rem', sm: '1.5rem', md: '1.8rem' },
               letterSpacing: '-0.02em',
