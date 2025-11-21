@@ -163,37 +163,6 @@ export function MainApp() {
                     Generador de Certificados
                   </Typography>
                   
-                  <Typography
-                    variant="h6"
-                    sx={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 1,
-                      px: 2.5,
-                      py: 1,
-                      fontWeight: 700,
-                      letterSpacing: '0.12em',
-                      textTransform: 'uppercase',
-                      color: mode === 'dark' ? '#e0e7ff' : '#312e81',
-                      backgroundColor: mode === 'dark'
-                        ? 'rgba(129, 140, 248, 0.12)'
-                        : 'rgba(99, 102, 241, 0.08)',
-                      borderRadius: 2,
-                      border: mode === 'dark'
-                        ? '1px solid rgba(129, 140, 248, 0.35)'
-                        : '1px solid rgba(99, 102, 241, 0.25)',
-                      boxShadow: mode === 'dark'
-                        ? '0 10px 30px rgba(0, 0, 0, 0.35)'
-                        : '0 10px 30px rgba(99, 102, 241, 0.12)',
-                      transition: 'transform 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
-                      '&:hover': {
-                        transform: 'scale(1.03)'
-                      }
-                    }}
-                  >
-                    Plataforma de Certificados
-                  </Typography>
                 </Box>
 
                 <Paper sx={{ 

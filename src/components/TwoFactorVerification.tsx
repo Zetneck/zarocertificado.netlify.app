@@ -129,35 +129,6 @@ export function TwoFactorVerification() {
       >
         <Box sx={{ textAlign: 'center', mb: { xs: 2, sm: 3 } }}>
           <Typography
-            variant="h6"
-            sx={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 1,
-              px: 2,
-              py: 0.75,
-              fontWeight: 700,
-              letterSpacing: '0.12em',
-              textTransform: 'uppercase',
-              color: theme.palette.mode === 'dark' ? '#e0e7ff' : '#312e81',
-              backgroundColor: theme.palette.mode === 'dark'
-                ? 'rgba(129, 140, 248, 0.12)'
-                : 'rgba(99, 102, 241, 0.08)',
-              borderRadius: 2,
-              border: theme.palette.mode === 'dark'
-                ? '1px solid rgba(129, 140, 248, 0.35)'
-                : '1px solid rgba(99, 102, 241, 0.25)',
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 10px 30px rgba(0, 0, 0, 0.35)'
-                : '0 10px 30px rgba(99, 102, 241, 0.12)',
-              mb: { xs: 1, sm: 2 }
-            }}
-          >
-            Plataforma de Certificados
-          </Typography>
-
-          <Typography
             variant="h4"
             sx={{
               fontWeight: 700,
