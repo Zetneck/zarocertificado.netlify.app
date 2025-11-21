@@ -163,6 +163,42 @@ export function MainApp() {
                     Generador de Certificados
                   </Typography>
                   
+                  {/* Logo de Zaro - más compacto con filtro de inversión corregido */}
+                  <Box
+                    component="img"
+                    src="/Logo-Zaro.png"
+                    alt="Logo Zaro"
+                    sx={{
+                      height: { xs: 40, sm: 50, md: 60 }, // Reducido
+                      width: 'auto',
+                      maxWidth: '250px', // Reducido
+                      objectFit: 'contain',
+                      filter: mode === 'dark' 
+                        ? 'brightness(1.1) drop-shadow(0 0 20px rgba(129, 140, 248, 0.4)) invert(0) contrast(1.1) saturate(1.2)' 
+                        : 'drop-shadow(0 2px 8px rgba(99, 102, 241, 0.2)) invert(1) contrast(1) saturate(1)',
+                      transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)', // Transición más suave
+                      '&:hover': {
+                        transform: 'scale(1.05)',
+                        filter: mode === 'dark' 
+                          ? 'brightness(1.2) drop-shadow(0 0 25px rgba(129, 140, 248, 0.6)) invert(0) contrast(1.2) saturate(1.3)' 
+                          : 'drop-shadow(0 4px 16px rgba(99, 102, 241, 0.3)) invert(1) contrast(1.1) saturate(1.1)'
+                      }
+                    }}
+                    onError={(e) => {
+                      // Fallback si no se encuentra la imagen
+                      const target = e.target as HTMLImageElement;
+                      target.style.display = 'none';
+                      // Mostrar texto como fallback
+                      const fallbackText = document.createElement('div');
+                      fallbackText.innerHTML = 'ZARO';
+                      fallbackText.style.fontSize = '2rem';
+                      fallbackText.style.fontWeight = '300';
+                      fallbackText.style.color = mode === 'dark' ? '#818cf8' : '#6366f1';
+                      fallbackText.style.letterSpacing = '0.1em';
+                      fallbackText.style.textTransform = 'uppercase';
+                      target.parentNode?.appendChild(fallbackText);
+                    }}
+                  />
                 </Box>
 
                 <Paper sx={{ 

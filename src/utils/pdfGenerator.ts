@@ -66,11 +66,23 @@ export const generatePDF = async (data: CertificateData): Promise<PDFResult> => 
     };
 
     // Intentar pre-cargar todas las imágenes
+    const logoSources = ['/logo.png', './logo.png', 'logo.png'];
     const firmaAutorizadoSources = ['/firma-autorizado.png', './firma-autorizado.png', 'firma-autorizado.png'];
     const firmaTecnicoSources = ['/firma-tecnico.png', './firma-tecnico.png', 'firma-tecnico.png'];
 
+    let logoImg: HTMLImageElement | null = null;
     let firmaAutorizadoImg: HTMLImageElement | null = null;
     let firmaTecnicoImg: HTMLImageElement | null = null;
+
+    // Pre-cargar logo
+    for (const src of logoSources) {
+      try {
+        logoImg = await preloadImage(src);
+        break;
+      } catch {
+        console.warn(`No se pudo cargar logo desde: ${src}`);
+      }
+    }
 
     // Pre-cargar firma autorizado
     for (const src of firmaAutorizadoSources) {
@@ -102,6 +114,56 @@ export const generatePDF = async (data: CertificateData): Promise<PDFResult> => 
     const pageWidth = doc.internal.pageSize.width;
     const margin = 40;
     let currentY = 50;
+
+    // Función para dibujar el logo de PROGILSA desde imagen pre-cargada
+    const drawProgilsaLogo = (x: number, y: number) => {
+      try {
+        if (logoImg) {
+          // Calcular proporciones correctas basadas en la imagen original
+          const originalWidth = logoImg.width || 580;
+          const originalHeight = logoImg.height || 385;
+          const aspectRatio = originalWidth / originalHeight;
+          
+          // Definir el ancho deseado en el PDF y calcular altura proporcional
+          const logoWidth = 170; // Tamaño óptimo para el layout
+          const logoHeight = logoWidth / aspectRatio;
+          
+          // Crear un canvas con alta resolución para mejor calidad
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          
+          // Usar dimensiones más altas para mejor calidad
+          const scale = 3; // Aumentado para mejor calidad en móvil
+          canvas.width = logoWidth * scale;
+          canvas.height = logoHeight * scale;
+          
+          // Configurar el contexto para mejor calidad
+          if (ctx) {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+            
+            // Fondo blanco para evitar transparencias problemáticas
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Dibujar la imagen en el canvas con alta calidad
+            ctx.drawImage(logoImg, 0, 0, canvas.width, canvas.height);
+          }
+          
+          // Convertir a data URL con máxima calidad
+          const dataURL = canvas.toDataURL('image/png', 1.0);
+          
+          // Agregar la imagen al PDF con las dimensiones correctas
+          doc.addImage(dataURL, 'PNG', x, y, logoWidth, logoHeight);
+        } else {
+          // Usar fallback si no hay imagen
+          drawFallbackLogo(x, y);
+        }
+      } catch (error) {
+        console.warn('Error procesando logo, usando fallback:', error);
+        drawFallbackLogo(x, y);
+      }
+    };
 
     // Función para dibujar firma desde imagen pre-cargada
     const drawSignature = (img: HTMLImageElement | null, x: number, y: number, width: number = 100, height: number = 40) => {
@@ -142,6 +204,44 @@ export const generatePDF = async (data: CertificateData): Promise<PDFResult> => 
       }
     };
 
+    // Función de logo fallback
+    const drawFallbackLogo = (x: number, y: number) => {
+      // Usar las mismas dimensiones que el logo real
+      const logoWidth = 120;
+      const logoHeight = logoWidth / (465/348); // Mantener proporción original
+      
+      // Logo dibujado profesional como fallback
+      doc.setFillColor(255, 255, 255);
+      doc.rect(x, y, logoWidth, logoHeight, 'F');
+      
+      // Marco principal
+      doc.setDrawColor(200, 50, 50);
+      doc.setLineWidth(2);
+      doc.rect(x, y, logoWidth, logoHeight, 'S');
+      
+      // Texto PROGILSA estilizado
+      doc.setFont('helvetica', 'bold');
+      doc.setFontSize(16);
+      doc.setTextColor(200, 50, 50);
+      doc.text('PROGILSA', x + 15, y + 25);
+      
+      // Línea decorativa
+      doc.setDrawColor(200, 50, 50);
+      doc.setLineWidth(1);
+      doc.line(x + 15, y + 30, x + logoWidth - 15, y + 30);
+      
+      // Subtexto
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(11);
+      doc.setTextColor(100, 100, 100);
+      doc.text('FUMIGACIONES', x + 15, y + 45);
+      doc.text('S.A DE C.V', x + 15, y + 58);
+      
+      // Restablecer colores
+      doc.setTextColor(0, 0, 0);
+      doc.setDrawColor(0, 0, 0);
+    };
+
     // Función auxiliar para dibujar líneas separadoras
     const drawSeparator = (y: number, weight: number = 1) => {
       doc.setDrawColor(0, 0, 0);
@@ -160,20 +260,31 @@ export const generatePDF = async (data: CertificateData): Promise<PDFResult> => 
     // CONFIGURAR TEXTO INICIAL
     doc.setTextColor(0, 0, 0);
 
-    // ENCABEZADO - INFORMACIÓN DE LA EMPRESA
+    // ENCABEZADO - LOGO E INFORMACIÓN DE LA EMPRESA
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(12);
-
-    // Información de la empresa
+    
+    // Logo PROGILSA (alineado con el texto de la empresa) - Usar logo pre-cargado
+    drawProgilsaLogo(margin, currentY - 25); // Ajustado para alinear con el texto
+    
+    // Información de la empresa (esquina superior derecha)
     const rightMargin = pageWidth - margin;
     doc.setFont('helvetica', 'normal');
     doc.setFontSize(10);
-
-    doc.text('PROGILSA FUMIGACIONES S.A DE C.V', margin, currentY);
-    doc.text('(81)223555354', margin, currentY + 12);
-    doc.text('www.progilsafumigaciones.com', margin, currentY + 24);
-
-    currentY += 50; // Ajustado tras retirar el logo
+    
+    let companyText = 'PROGILSA FUMIGACIONES S.A DE C.V';
+    let textWidth = doc.getTextWidth(companyText);
+    doc.text(companyText, rightMargin - textWidth, currentY);
+    
+    companyText = '(81)223555354';
+    textWidth = doc.getTextWidth(companyText);
+    doc.text(companyText, rightMargin - textWidth, currentY + 12);
+    
+    companyText = 'www.progilsafumigaciones.com';
+    textWidth = doc.getTextWidth(companyText);
+    doc.text(companyText, rightMargin - textWidth, currentY + 24);
+    
+    currentY += 70; // Reducido para dar más espacio abajo
 
     // FOLIO en la esquina superior derecha
     doc.setFont('helvetica', 'bold');
