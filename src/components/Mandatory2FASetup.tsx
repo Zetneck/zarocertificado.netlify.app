@@ -112,30 +112,7 @@ export function Mandatory2FASetup() {
       }}
     >
       <Container maxWidth="sm">
-        {/* Logo de Zaro */}
-        <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <Box
-            component="img"
-            src="/Logo-Zaro.png"
-            alt="Logo Zaro"
-            sx={{
-              height: { xs: 50, sm: 60 },
-              width: 'auto',
-              maxWidth: '250px',
-              objectFit: 'contain',
-              filter: theme.palette.mode === 'dark' 
-                ? 'brightness(1.1) drop-shadow(0 0 20px rgba(129, 140, 248, 0.4))' 
-                : 'drop-shadow(0 2px 8px rgba(99, 102, 241, 0.2))',
-              mb: 2
-            }}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-            }}
-          />
-        </Box>
-
-        <Paper sx={{ 
+        <Paper sx={{
           p: 4, 
           borderRadius: 3,
           backgroundColor: theme.palette.mode === 'dark' 
