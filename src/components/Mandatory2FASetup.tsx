@@ -112,27 +112,34 @@ export function Mandatory2FASetup() {
       }}
     >
       <Container maxWidth="sm">
-        {/* Logo de Zaro */}
         <Box sx={{ textAlign: 'center', mb: 3 }}>
-          <Box
-            component="img"
-            src="/Logo-Zaro.png"
-            alt="Logo Zaro"
+          <Typography
+            variant="h6"
             sx={{
-              height: { xs: 50, sm: 60 },
-              width: 'auto',
-              maxWidth: '250px',
-              objectFit: 'contain',
-              filter: theme.palette.mode === 'dark' 
-                ? 'brightness(1.1) drop-shadow(0 0 20px rgba(129, 140, 248, 0.4))' 
-                : 'drop-shadow(0 2px 8px rgba(99, 102, 241, 0.2))',
-              mb: 2
+              display: 'inline-flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 1,
+              px: 2.5,
+              py: 1,
+              fontWeight: 700,
+              letterSpacing: '0.12em',
+              textTransform: 'uppercase',
+              color: theme.palette.mode === 'dark' ? '#e0e7ff' : '#312e81',
+              backgroundColor: theme.palette.mode === 'dark'
+                ? 'rgba(129, 140, 248, 0.12)'
+                : 'rgba(99, 102, 241, 0.08)',
+              borderRadius: 2,
+              border: theme.palette.mode === 'dark'
+                ? '1px solid rgba(129, 140, 248, 0.35)'
+                : '1px solid rgba(99, 102, 241, 0.25)',
+              boxShadow: theme.palette.mode === 'dark'
+                ? '0 10px 30px rgba(0, 0, 0, 0.35)'
+                : '0 10px 30px rgba(99, 102, 241, 0.12)'
             }}
-            onError={(e) => {
-              const target = e.target as HTMLImageElement;
-              target.style.display = 'none';
-            }}
-          />
+          >
+            Plataforma de Certificados
+          </Typography>
         </Box>
 
         <Paper sx={{ 
